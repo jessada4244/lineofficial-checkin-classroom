@@ -14,22 +14,22 @@ $imagePathPrefix = 'assets/images/'; // ตรวจสอบว่ารูป�
 $menus = [
     'guest' => [
         'name' => 'Guest Menu',
-        'image' => $imagePathPrefix . 'menu_guest.jpg',
+        'image' => $imagePathPrefix . 'guest.jpg',
         'areas' => getThreeButtonAreas()
     ],
     'admin' => [
         'name' => 'Admin Menu',
-        'image' => $imagePathPrefix . 'menu_admin.jpg',
+        'image' => $imagePathPrefix . 'admin.jpg',
         'areas' => getThreeButtonAreas()
     ],
     'student' => [
         'name' => 'Student Menu',
-        'image' => $imagePathPrefix . 'menu_student.jpg',
+        'image' => $imagePathPrefix . 'student.jpg',
         'areas' => getThreeButtonAreas()
     ],
     'teacher' => [
         'name' => 'Teacher Menu',
-        'image' => $imagePathPrefix . 'menu_teacher.jpg',
+        'image' => $imagePathPrefix . 'teacher.jpg',
         'areas' => getTeacherMenuAreas() // ใช้แบบ 2 ปุ่ม (เล็ก-ยาว)
     ]
 ];

@@ -1,50 +1,52 @@
 <?php
+header('Content-Type: application/json');
 require_once '../config/db.php';
 require_once '../config/line_config.php';
 
-// รับค่า JSON จากหน้า LIFF Login
-$data = json_decode(file_get_contents('php://input'), true);
-$username = $data['username'];
-$password = $data['password'];
-$lineUserId = $data['lineUserId']; // ส่งมาจาก LIFF (liff.getProfile)
+// รับค่า JSON
+$input = json_decode(file_get_contents('php://input'), true);
+$username = $input['username'] ?? '';
+$password = $input['password'] ?? '';
+$lineUserId = $input['lineUserId'] ?? '';
 
-// 1. ตรวจสอบ User/Pass ใน Database
-$stmt = $pdo->prepare("SELECT * FROM users WHERE username = ?");
-$stmt->execute([$username]);
+if (empty($username) || empty($lineUserId)) {
+    echo json_encode(['status' => 'error', 'message' => 'ข้อมูลไม่ครบถ้วน']);
+    exit;
+}
+
+// 1. ตรวจสอบ Username (แบบง่าย ไม่ได้ Hash Password เพื่อเทสก่อน)
+// ถ้าจะใช้จริงต้องเปลี่ยนเป็น password_verify()
+$stmt = $pdo->prepare("SELECT * FROM users WHERE username = ? AND password = ?"); 
+$stmt->execute([$username, $password]); 
 $user = $stmt->fetch();
 
-if ($user && password_verify($password, $user['password'])) { // แนะนำให้ Hash password
-    
-    // 2. อัปเดต line_user_id ลงในตาราง users
+if ($user) {
+    // 2. อัปเดต Line User ID ของคนนี้ลง Database
     $update = $pdo->prepare("UPDATE users SET line_user_id = ? WHERE id = ?");
     $update->execute([$lineUserId, $user['id']]);
 
-    // 3. เลือก Rich Menu ตาม Role
-    $richMenuIdToLink = '';
-    if ($user['role'] == 'admin') {
-        $richMenuIdToLink = RICHMENU_ADMIN; // ค่าจาก config
-    } elseif ($user['role'] == 'teacher') {
-        $richMenuIdToLink = RICHMENU_TEACHER;
-    } else {
-        $richMenuIdToLink = RICHMENU_STUDENT;
-    }
+    // 3. เลือกเมนูตาม Role
+    $richMenuId = RICHMENU_GUEST; // default
+    if ($user['role'] == 'admin') $richMenuId = RICHMENU_ADMIN;
+    if ($user['role'] == 'teacher') $richMenuId = RICHMENU_TEACHER;
+    if ($user['role'] == 'student') $richMenuId = RICHMENU_STUDENT;
 
-    // 4. ยิง cURL ไปหา LINE เพื่อเปลี่ยนเมนู
-    linkRichMenu($lineUserId, $richMenuIdToLink, CHANNEL_ACCESS_TOKEN);
+    // 4. ยิง API เปลี่ยนเมนู
+    linkRichMenu($lineUserId, $richMenuId, CHANNEL_ACCESS_TOKEN);
 
     echo json_encode(['status' => 'success', 'role' => $user['role']]);
 } else {
-    echo json_encode(['status' => 'error', 'message' => 'Login Failed']);
+    echo json_encode(['status' => 'error', 'message' => 'Username หรือ Password ไม่ถูกต้อง']);
 }
 
-// ฟังก์ชันยิง API LINE
+// ฟังก์ชันยิง LINE API
 function linkRichMenu($userId, $richMenuId, $token) {
     $url = "https://api.line.me/v2/bot/user/$userId/richmenu/$richMenuId";
     $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        "Authorization: Bearer $token"
-    ]);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ["Authorization: Bearer $token"]);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // ปิด SSL Check (Localhost)
     curl_exec($ch);
     curl_close($ch);
 }
