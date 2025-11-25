@@ -6,8 +6,7 @@
 // 1. CONFIGURATION
 // ==========================================
 // *** ใส่ Channel Access Token ของคุณที่นี่ ***
-$accessToken = 'XBHB0gvzj+/rd4xFbdkdkCvifDB/doyl5TVk04bojp2Gffq4EzvYivlTHXqQ4uTbFitI+dN5JfoRa2W7Y2lZKVWoQ4cZxp1WSdXMPLWjE99VWDNawnxLFghlFoAPwFALkMgRZtbZ65oMUmZTJBi6TAdB04t89/1O/w1cDnyilFU='; 
-
+$accessToken = 'XBHB0gvzj+/rd4xFbdkdkCvifDB/doyl5TVk04bojp2Gffq4EzvYivlTHXqQ4uTbFitI+dN5JfoRa2W7Y2lZKVWoQ4cZxp1WSdXMPLWjE99VWDNawnxLFghlFoAPwFALkMgRZtbZ65oMUmZTJBi6TAdB04t89/1O/w1cDnyilFU=';
 $imagePathPrefix = 'assets/images/'; // ตรวจสอบว่ารูปอยู่ที่นี่จริง
 
 // กำหนดรายการเมนูทั้ง 4 แบบ

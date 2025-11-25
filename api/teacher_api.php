@@ -29,17 +29,28 @@ if ($action === 'get_classes') {
 // --- กรณี: สร้างวิชาใหม่ (Create Class) ---
 elseif ($action === 'create_class') {
     $name = $input['name'];
-    $time = $input['time'];
-    $lat = $input['lat'];
-    $lng = $input['lng'];
+    $color = $input['color'] ?? '#FFFFFF';
+    $limit = $input['limit'] ?? 40;
+    
+    // ลบ $time, $lat, $lng ออกไป
 
-    $sql = "INSERT INTO classrooms (teacher_id, subject_name, checkin_limit_time, lat, lng) VALUES (?, ?, ?, ?, ?)";
+    if(empty($name)) {
+        echo json_encode(['status' => 'error', 'message' => 'กรุณาระบุชื่อวิชา']);
+        exit;
+    }
+
+    // แก้ SQL ให้เหลือเฉพาะคอลัมน์ที่จำเป็น (โดยปล่อยให้ checkin_limit_time, lat, lng เป็น NULL/Default ใน DB)
+    $sql = "INSERT INTO classrooms (teacher_id, subject_name, room_color, student_limit) VALUES (?, ?, ?, ?)";
     $stmt = $pdo->prepare($sql);
     
-    if ($stmt->execute([$teacherId, $name, $time, $lat, $lng])) {
-        echo json_encode(['status' => 'success']);
-    } else {
-        echo json_encode(['status' => 'error', 'message' => 'บันทึกไม่สำเร็จ']);
+    try {
+        if ($stmt->execute([$teacherId, $name, $color, $limit])) {
+            echo json_encode(['status' => 'success']);
+        } else {
+            echo json_encode(['status' => 'error', 'message' => 'SQL Error: ' . implode(" ", $stmt->errorInfo())]);
+        }
+    } catch (Exception $e) {
+        echo json_encode(['status' => 'error', 'message' => 'Exception: ' . $e->getMessage()]);
     }
 }
 ?>
