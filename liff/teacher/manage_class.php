@@ -1,6 +1,5 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="th">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,122 +8,76 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <style>
-        /* สไตล์สำหรับปุ่มสีที่ถูกเลือก */
         .color-swatch.selected {
             border: 3px solid #000;
             box-shadow: 0 0 0 2px #fff;
             transform: scale(1.1);
         }
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap');
+        body { font-family: 'Sarabun', sans-serif; }
     </style>
 </head>
-
-<body class="bg-gray-100 p-4">
+<body class="bg-gray-100 p-4 min-h-screen">
 
     <div class="max-w-md mx-auto pb-20">
         <h1 class="text-2xl font-bold mb-6 text-gray-800">รายวิชาของฉัน</h1>
-
-        <button onclick="document.getElementById('createModal').classList.remove('hidden'); selectColor('#3B82F6')"
-            class="w-full bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-xl shadow-lg flex justify-center items-center font-bold mb-6 transition">
-            + สร้างห้องเรียนใหม่
+        
+        <button onclick="openCreateModal()" 
+                class="w-full bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-xl shadow-lg flex justify-center items-center font-bold mb-6 transition transform active:scale-95">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            สร้างห้องเรียนใหม่
         </button>
 
         <div id="classList" class="space-y-4">
-            <p class="text-center text-gray-500 mt-10">กำลังโหลดข้อมูล...</p>
+            <div class="text-center mt-10 text-gray-400">กำลังโหลดข้อมูล...</div>
         </div>
     </div>
 
     <div id="createModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-60 backdrop-blur-sm">
-        <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
-            <h2 class="text-xl font-bold mb-4 text-gray-800">สร้างห้องเรียนใหม่</h2>
-
-            <div class="mb-3">
-                <label class="text-xs text-gray-500">ชื่อวิชา</label>
-                <input type="text" id="subjectName" placeholder="เช่น Programming 1" class="w-full border bg-gray-50 p-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl transform transition-all scale-100">
+            <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2">สร้างห้องเรียนใหม่</h2>
+            
+            <div class="mb-4">
+                <label class="text-xs text-gray-500 font-semibold ml-1">รหัสวิชา</label>
+                <input type="text" id="courseCode" placeholder="เช่น CS101" class="w-full border bg-gray-50 p-2.5 rounded-lg mb-3 focus:ring-2 focus:ring-blue-500 outline-none">
+                
+                <label class="text-xs text-gray-500 font-semibold ml-1">ชื่อวิชา</label>
+                <input type="text" id="subjectName" placeholder="เช่น Computer Science" class="w-full border bg-gray-50 p-2.5 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
             </div>
 
-            <div class="mb-4">
-                <label class="text-xs text-gray-500 block mb-1">สีประจำวิชา (เลือกได้ 7 สี)</label>
-                <div id="colorSelection" class="flex gap-2 justify-between p-2 bg-gray-50 rounded-lg border">
-                </div>
+            <div class="mb-6">
+                <label class="text-xs text-gray-500 block mb-2 font-semibold ml-1">สีประจำวิชา</label>
+                <div id="colorSelection" class="flex gap-2 justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
+                    </div>
                 <input type="hidden" id="roomColor" value="#3B82F6">
             </div>
 
-            <div class="mb-4">
-                <label class="text-xs text-gray-500">จำนวนที่รับ (คน)</label>
-                <input type="number" id="studentLimit" value="40" class="w-full border bg-gray-50 p-2 rounded-lg text-center focus:ring-2 focus:ring-blue-500 outline-none">
-            </div>
-
-
-            <div class="flex justify-end gap-2 pt-2 border-t">
-                <button onclick="document.getElementById('createModal').classList.add('hidden')" class="px-4 py-2 text-sm text-gray-500 hover:bg-gray-100 rounded-lg">ยกเลิก</button>
-                <button onclick="createClass()" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg shadow">บันทึก</button>
+            <div class="flex justify-end gap-3 pt-2">
+                <button onclick="document.getElementById('createModal').classList.add('hidden')" class="px-5 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition">ยกเลิก</button>
+                <button onclick="createClass()" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg shadow transition">บันทึก</button>
             </div>
         </div>
     </div>
 
     <script>
-        const LIFF_ID = "2008562649-bkoEQOMg";
-        const COLORS = [
-            '#3B82F6',
-            '#10B981',
-            '#F59E0B',
-            '#EF4444',
-            '#8B5CF6',
-            '#EC4899',
-            '#06B6D4'
-        ];
+        const LIFF_ID = "2008562649-bkoEQOMg"; 
+        const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4'];
 
         async function main() {
-            await liff.init({
-                liffId: LIFF_ID
-            });
-            if (!liff.isLoggedIn()) liff.login();
-
-            // สร้างปุ่มสีเมื่อ DOM พร้อม
-            renderColorSwatches();
-            loadClasses();
+            try {
+                await liff.init({ liffId: LIFF_ID });
+                if (!liff.isLoggedIn()) {
+                    liff.login();
+                } else {
+                    loadClasses();
+                    renderColorSwatches();
+                }
+            } catch (err) { alert("LIFF Init Failed"); }
         }
         main();
 
-        // **********************************************
-        // ฟังก์ชันจัดการสี
-        // **********************************************
-        function renderColorSwatches() {
-            const container = document.getElementById('colorSelection');
-            container.innerHTML = '';
-            COLORS.forEach(hex => {
-                const isDefault = hex === document.getElementById('roomColor').value;
-                const swatch = document.createElement('div');
-                swatch.className = `color-swatch w-6 h-6 rounded-full cursor-pointer transition duration-150 ${isDefault ? 'selected' : ''}`;
-                swatch.style.backgroundColor = hex;
-                swatch.onclick = () => selectColor(hex);
-                container.appendChild(swatch);
-            });
-        }
-
-        function selectColor(hex) {
-            document.getElementById('roomColor').value = hex;
-            document.querySelectorAll('.color-swatch').forEach(swatch => {
-                swatch.classList.remove('selected');
-                if (swatch.style.backgroundColor === hexToRgb(hex)) {
-                    swatch.classList.add('selected');
-                }
-            });
-        }
-
-        function hexToRgb(hex) {
-            // แปลง Hex เป็น RGB string เพื่อเปรียบเทียบกับ .style.backgroundColor
-            const bigint = parseInt(hex.slice(1), 16);
-            const r = (bigint >> 16) & 255;
-            const g = (bigint >> 8) & 255;
-            const b = bigint & 255;
-            return `rgb(${r}, ${g}, ${b})`;
-        }
-
-
-        // **********************************************
-        // ฟังก์ชันโหลดและแสดงผล (ปรับปุ่มจัดการ)
-        // **********************************************
         async function loadClasses() {
             try {
                 const profile = await liff.getProfile();
@@ -132,63 +85,69 @@
                     action: 'get_classes',
                     line_id: profile.userId
                 });
-
+                
                 const list = document.getElementById('classList');
                 list.innerHTML = '';
 
                 if (res.data.classes.length === 0) {
-                    list.innerHTML = '<div class="text-center py-10 bg-white rounded-xl shadow-sm"><p class="text-gray-400">ยังไม่มีรายวิชา</p></div>';
+                    list.innerHTML = `<div class="text-center py-10 bg-white rounded-xl shadow-sm"><p class="text-gray-400">ยังไม่มีรายวิชา</p></div>`;
                     return;
                 }
 
                 res.data.classes.forEach(c => {
                     const textColor = isDarkColor(c.room_color) ? 'text-white' : 'text-gray-800';
-                    const subTextColor = isDarkColor(c.room_color) ? 'text-gray-200' : 'text-gray-500';
+                    const subTextColor = isDarkColor(c.room_color) ? 'text-white/80' : 'text-gray-600';
+                    const badgeBg = isDarkColor(c.room_color) ? 'bg-white/20' : 'bg-gray-200';
 
-                    // ปรับสไตล์ปุ่มจัดการให้สวยงาม
-                    const manageButton = `<button onclick="goToEditClass(${c.id})" 
-    class="text-xs font-medium bg-white/70 hover:bg-white text-gray-800 px-3 py-1 rounded-full shadow-sm transition backdrop-blur-sm">
-    ⚙️ จัดการ
-</button>`;
-                    // ...
-
-                    // เพิ่มฟังก์ชันนี้ต่อท้าย
-                   
                     list.innerHTML += `
-                        <div style="background-color: ${c.room_color};" class="p-5 rounded-2xl shadow-md transition transform active:scale-95">
+                        <div style="background-color: ${c.room_color};" class="relative p-5 rounded-2xl shadow-lg transition transform active:scale-98">
                             <div class="flex justify-between items-start">
-                                <div>
-                                    <h3 class="font-bold text-xl ${textColor}">${c.subject_name}</h3>
-                                    <div class="flex items-center gap-2 mt-1">
-                                        <span class="text-xs ${subTextColor}">👥 รับ ${c.student_limit} คน</span>
-                                        ${c.checkin_limit_time ? `<span class="text-xs ${subTextColor}">⏰ สายหลัง ${c.checkin_limit_time.substring(0,5)}</span>` : `<span class="text-xs ${subTextColor} font-medium">ยังไม่กำหนดเวลา/พิกัด</span>`}
-                                    </div>
+                                <div class="w-2/3">
+                                    <span class="text-xs font-bold px-2 py-0.5 rounded ${badgeBg} ${textColor} mb-2 inline-block">
+                                        ${c.course_code}
+                                    </span>
+                                    <h3 class="font-bold text-xl ${textColor} leading-tight mb-1 truncate">${c.subject_name}</h3>
+                                    <p class="text-sm ${subTextColor} mt-2 flex items-center gap-1">
+                                        🔑 Code: <span class="font-mono font-bold">${c.class_code}</span>
+                                    </p>
                                 </div>
-                                ${manageButton}
+                                <button onclick="goToEditClass(${c.id})" 
+                                    class="absolute top-5 right-5 w-10 h-10 bg-white/20 hover:bg-white/40 backdrop-blur-md rounded-full text-xs font-bold ${textColor} shadow-sm border border-white/30 flex items-center justify-center">
+                                    ⚙️
+                                </button>
                             </div>
                         </div>
                     `;
                 });
-            } catch (err) {
-                console.error(err);
-            }
+            } catch (err) { console.error(err); }
+        }
+
+        function openCreateModal() {
+            document.getElementById('courseCode').value = '';
+            document.getElementById('subjectName').value = '';
+            selectColor(COLORS[0]);
+            document.getElementById('createModal').classList.remove('hidden');
         }
 
         async function createClass() {
+            const courseCode = document.getElementById('courseCode').value;
             const name = document.getElementById('subjectName').value;
-            const color = document.getElementById('roomColor').value; // อ่านค่าจาก hidden input
-            const limit = document.getElementById('studentLimit').value;
-
-            if (!name) return alert("กรุณาระบุชื่อวิชา");
+            const color = document.getElementById('roomColor').value;
+            
+            if (!name || !courseCode) {
+                return alert("กรุณากรอกรหัสวิชาและชื่อวิชา");
+            }
 
             try {
                 const profile = await liff.getProfile();
                 const res = await axios.post('../../api/teacher_api.php', {
                     action: 'create_class',
                     line_id: profile.userId,
+                    course_code: courseCode,
                     name: name,
-                    color: color,
-                    limit: limit
+                    color: color
+                    // ไม่ต้องส่ง class_code เพราะ API สุ่มให้แล้ว
+                    // ไม่ต้องส่ง limit เพราะ fix ไว้ที่ 40
                 });
 
                 if (res.data.status === 'success') {
@@ -198,26 +157,46 @@
                 } else {
                     alert("❌ บันทึกไม่ได้: " + res.data.message);
                 }
-            } catch (err) {
-                alert("Server Error: " + err.message);
-            }
+            } catch (err) { alert("Server Error"); }
         }
 
-        // Helper Function: เช็คสีเข้ม/อ่อน
+        function renderColorSwatches() {
+            const container = document.getElementById('colorSelection');
+            container.innerHTML = '';
+            COLORS.forEach(hex => {
+                const swatch = document.createElement('div');
+                swatch.className = `color-swatch w-8 h-8 rounded-full cursor-pointer transition duration-150`;
+                swatch.style.backgroundColor = hex;
+                swatch.onclick = () => selectColor(hex);
+                container.appendChild(swatch);
+            });
+            selectColor(COLORS[0]);
+        }
+        function selectColor(hex) {
+            document.getElementById('roomColor').value = hex;
+            document.querySelectorAll('.color-swatch').forEach(swatch => {
+                swatch.classList.remove('selected');
+                if (swatch.style.backgroundColor.replace(/\s/g, '') === hexToRgb(hex).replace(/\s/g, '')) {
+                    swatch.classList.add('selected');
+                }
+            });
+        }
+        function hexToRgb(hex) {
+            const bigint = parseInt(hex.slice(1), 16);
+            const r = (bigint >> 16) & 255;
+            const g = (bigint >> 8) & 255;
+            const b = bigint & 255;
+            return `rgb(${r}, ${g}, ${b})`;
+        }
         function isDarkColor(hex) {
-            if (!hex) return false;
+            if(!hex) return false;
             const r = parseInt(hex.substr(1, 2), 16);
             const g = parseInt(hex.substr(3, 2), 16);
             const b = parseInt(hex.substr(5, 2), 16);
-            const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-            return luma < 128;
+            const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b; 
+            return luma < 128; 
         }
-         function goToEditClass(classId) {
-                        // ส่ง Class ID ไปเป็น Query Parameter
-                        window.location.href = './edit_class.php?class_id=' + classId;
-                    }
-
+        function goToEditClass(id) { window.location.href = './edit_class.php?class_id=' + id; }
     </script>
 </body>
-
 </html>

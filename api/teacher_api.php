@@ -1,7 +1,9 @@
 <?php
+// api/teacher_api.php
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
+
 header('Content-Type: application/json');
 require_once '../config/db.php';
 
@@ -9,153 +11,137 @@ $input = json_decode(file_get_contents('php://input'), true);
 $action = $input['action'] ?? '';
 $lineId = $input['line_id'] ?? '';
 
-// หา teacher_id จาก line_id ก่อน
+// Check Teacher Logic
+if (empty($lineId)) { echo json_encode(['status' => 'error', 'message' => 'No Line ID']); exit; }
 $stmt = $pdo->prepare("SELECT id FROM users WHERE line_user_id = ? AND role = 'teacher'");
 $stmt->execute([$lineId]);
 $teacher = $stmt->fetch();
-
-if (!$teacher) {
-    echo json_encode(['status' => 'error', 'message' => 'ไม่พบข้อมูลอาจารย์']);
-    exit;
-}
-
+if (!$teacher) { echo json_encode(['status' => 'error', 'message' => 'Unauthorized']); exit; }
 $teacherId = $teacher['id'];
 
-// --- กรณี: ดึงรายการวิชา (Get Classes) ---
-if ($action === 'get_classes') {
-    $stmt = $pdo->prepare("SELECT * FROM classrooms WHERE teacher_id = ? ORDER BY id DESC");
-    $stmt->execute([$teacherId]);
-    $classes = $stmt->fetchAll();
-    echo json_encode(['status' => 'success', 'classes' => $classes]);
-}
-
-// --- กรณี: สร้างวิชาใหม่ (Create Class) ---
-elseif ($action === 'create_class') {
-    $name = $input['name'];
-    $color = $input['color'] ?? '#FFFFFF';
-    $limit = $input['limit'] ?? 40;
-    
-    // ลบ $time, $lat, $lng ออกไป
-
-    if(empty($name)) {
-        echo json_encode(['status' => 'error', 'message' => 'กรุณาระบุชื่อวิชา']);
-        exit;
+try {
+    // --- Get Classes ---
+    if ($action === 'get_classes') {
+        $stmt = $pdo->prepare("SELECT * FROM classrooms WHERE teacher_id = ? ORDER BY id DESC");
+        $stmt->execute([$teacherId]);
+        echo json_encode(['status' => 'success', 'classes' => $stmt->fetchAll()]);
     }
 
-    // แก้ SQL ให้เหลือเฉพาะคอลัมน์ที่จำเป็น (โดยปล่อยให้ checkin_limit_time, lat, lng เป็น NULL/Default ใน DB)
-    $sql = "INSERT INTO classrooms (teacher_id, subject_name, room_color, student_limit) VALUES (?, ?, ?, ?)";
-    $stmt = $pdo->prepare($sql);
-    
-    try {
-        if ($stmt->execute([$teacherId, $name, $color, $limit])) {
-            echo json_encode(['status' => 'success']);
-        } else {
-            echo json_encode(['status' => 'error', 'message' => 'SQL Error: ' . implode(" ", $stmt->errorInfo())]);
+    // --- Create Class (แก้ไขใหม่: สุ่มรหัส Class Code เอง) ---
+    elseif ($action === 'create_class') {
+        $name = $input['name'];
+        $courseCode = $input['course_code']; // รับรหัสวิชา
+        $color = $input['color'] ?? '#FFFFFF';
+        $limit = 40; // ค่า Default
+
+        // *** สุ่มรหัสเข้าห้อง 6 หลักตรงนี้ ***
+        $classCode = rand(100000, 999999); 
+
+        if (empty($name) || empty($courseCode)) {
+            echo json_encode(['status' => 'error', 'message' => 'กรุณากรอกรหัสวิชาและชื่อวิชา']);
+            exit;
         }
-    } catch (Exception $e) {
-        echo json_encode(['status' => 'error', 'message' => 'Exception: ' . $e->getMessage()]);
-    }
-}
-elseif ($action === 'get_class_details') {
-    $classId = $input['class_id'];
-    
-    $stmt = $pdo->prepare("SELECT * FROM classrooms WHERE id = ? AND teacher_id = ?");
-    $stmt->execute([$classId, $teacherId]);
-    $class = $stmt->fetch();
 
-    // ดึงรายชื่อนิสิตในห้อง
-    $stmtMembers = $pdo->prepare("
-        SELECT u.id, u.student_id, u.name 
-        FROM classroom_members cm 
-        JOIN users u ON cm.student_id = u.id 
-        WHERE cm.classroom_id = ?
-    ");
-    $stmtMembers->execute([$classId]);
-    $members = $stmtMembers->fetchAll();
-
-    if ($class) {
-        $class['members'] = $members;
-        echo json_encode(['status' => 'success', 'class' => $class]);
-    } else {
-        echo json_encode(['status' => 'error', 'message' => 'ไม่พบวิชา']);
-    }
-}
-
-// --- กรณี: อัปเดตข้อมูลวิชา (Update Class) ---
-elseif ($action === 'update_class') {
-    $classId = $input['class_id'];
-    $name = $input['name'];
-    $color = $input['color'];
-    $limit = $input['limit'];
-    $time = $input['time'];
-    $lat = $input['lat'];
-    $lng = $input['lng'];
-
-    $sql = "UPDATE classrooms 
-            SET subject_name = ?, room_color = ?, student_limit = ?, checkin_limit_time = ?, lat = ?, lng = ?
-            WHERE id = ? AND teacher_id = ?";
-    
-    $stmt = $pdo->prepare($sql);
-    
-    try {
-        if ($stmt->execute([$name, $color, $limit, $time, $lat, $lng, $classId, $teacherId])) {
-            echo json_encode(['status' => 'success']);
-        } else {
-            echo json_encode(['status' => 'error', 'message' => 'บันทึกไม่สำเร็จ']);
-        }
-    } catch (Exception $e) {
-        echo json_encode(['status' => 'error', 'message' => 'Exception: ' . $e->getMessage()]);
-    }
-}
-elseif ($action === 'add_member') {
-    $studentCode = $input['student_code'];
-    
-    // 1. ค้นหา student_id จากรหัสนิสิต (student_code)
-    $stmtStudent = $pdo->prepare("SELECT id FROM users WHERE student_id = ? AND role = 'student'");
-    $stmtStudent->execute([$studentCode]);
-    $student = $stmtStudent->fetch();
-
-    if (!$student) {
-        echo json_encode(['status' => 'error', 'message' => 'ไม่พบรหัสนิสิต หรือไม่ใช่ Role Student']);
-        exit;
-    }
-    
-    $studentId = $student['id'];
-    $classId = $input['class_id'];
-
-    // 2. เพิ่มเข้าตาราง classroom_members
-    try {
-        $sql = "INSERT INTO classroom_members (classroom_id, student_id) VALUES (?, ?)";
+        $sql = "INSERT INTO classrooms (teacher_id, subject_name, course_code, class_code, room_color, student_limit) VALUES (?, ?, ?, ?, ?, ?)";
         $stmt = $pdo->prepare($sql);
-        $stmt->execute([$classId, $studentId]);
-        echo json_encode(['status' => 'success']);
-    } catch (\PDOException $e) {
-        // Error 23000 มักเป็น Duplicate entry (นิสิตซ้ำ)
-        if ($e->getCode() == '23000') {
-            echo json_encode(['status' => 'error', 'message' => 'นิสิตคนนี้อยู่ในห้องแล้ว']);
-        } else {
-            echo json_encode(['status' => 'error', 'message' => 'SQL Error: ' . $e->getMessage()]);
-        }
-    }
-}
-
-// --- กรณี: ลบนิสิตออกจากห้อง (Remove Member) ---
-elseif ($action === 'remove_member') {
-    $studentIdToRemove = $input['student_id_to_remove']; // users.id ของนิสิต
-    $classId = $input['class_id'];
-
-    try {
-        $sql = "DELETE FROM classroom_members WHERE classroom_id = ? AND student_id = ?";
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([$classId, $studentIdToRemove]);
         
-        if ($stmt->rowCount() > 0) {
-             echo json_encode(['status' => 'success']);
+        if ($stmt->execute([$teacherId, $name, $courseCode, $classCode, $color, $limit])) {
+            echo json_encode(['status' => 'success']);
         } else {
-             echo json_encode(['status' => 'error', 'message' => 'ไม่พบสมาชิกในห้องนี้']);
+            throw new Exception("Save Failed");
         }
-    } catch (Exception $e) {
-        echo json_encode(['status' => 'error', 'message' => 'SQL Error: ' . $e->getMessage()]);
     }
+
+    // --- Get Details ---
+    elseif ($action === 'get_class_details') {
+        $classId = $input['class_id'];
+        $stmt = $pdo->prepare("SELECT * FROM classrooms WHERE id = ? AND teacher_id = ?");
+        $stmt->execute([$classId, $teacherId]);
+        $class = $stmt->fetch();
+
+        if (!$class) { echo json_encode(['status' => 'error', 'message' => 'Not Found']); exit; }
+
+        $stmtMembers = $pdo->prepare("
+            SELECT u.id, u.student_id, u.name 
+            FROM classroom_members cm 
+            JOIN users u ON cm.student_id = u.id 
+            WHERE cm.classroom_id = ?
+        ");
+        $stmtMembers->execute([$classId]);
+        $class['members'] = $stmtMembers->fetchAll();
+        
+        echo json_encode(['status' => 'success', 'class' => $class]);
+    }
+// --- Update Class (แบบ Dynamic: ส่งค่าไหนมา แก้แค่นั้น) ---
+    elseif ($action === 'update_class') {
+        $classId = $input['class_id'];
+        
+        // รายชื่อฟิลด์ที่อนุญาตให้แก้ไขได้
+        $allowedFields = ['subject_name', 'course_code', 'room_color', 'checkin_limit_time', 'lat', 'lng', 'class_code'];
+        
+        $setClauses = [];
+        $params = [];
+
+        // วนลูปเช็คว่า Front-end ส่งค่าอะไรมาบ้าง
+        foreach ($allowedFields as $field) {
+            if (array_key_exists($field, $input)) {
+                $setClauses[] = "$field = ?";
+                
+                // จัดการค่าว่างสำหรับ Lat/Lng ให้เป็น NULL
+                $val = $input[$field];
+                if (($field == 'lat' || $field == 'lng') && $val === '') {
+                    $val = NULL;
+                }
+                $params[] = $val;
+            }
+        }
+
+        if (empty($setClauses)) {
+            echo json_encode(['status' => 'success', 'message' => 'ไม่มีการเปลี่ยนแปลง']);
+            exit;
+        }
+
+        // เพิ่มเงื่อนไข WHERE
+        $params[] = $classId;
+        $params[] = $teacherId;
+
+        $sql = "UPDATE classrooms SET " . implode(', ', $setClauses) . " WHERE id = ? AND teacher_id = ?";
+        
+        $stmt = $pdo->prepare($sql);
+        if ($stmt->execute($params)) {
+            echo json_encode(['status' => 'success']);
+        } else {
+            throw new Exception("Update Failed");
+        }
+    }
+
+    // --- Add/Remove Member (เหมือนเดิม) ---
+    elseif ($action === 'add_member') {
+        $studentCode = $input['student_code'];
+        $classId = $input['class_id'];
+        
+        $stmtUser = $pdo->prepare("SELECT id FROM users WHERE student_id = ? AND role = 'student'");
+        $stmtUser->execute([$studentCode]);
+        $student = $stmtUser->fetch();
+
+        if (!$student) { echo json_encode(['status' => 'error', 'message' => 'ไม่พบรหัสนิสิต']); exit; }
+
+        try {
+            $stmtInsert = $pdo->prepare("INSERT INTO classroom_members (classroom_id, student_id) VALUES (?, ?)");
+            $stmtInsert->execute([$classId, $student['id']]);
+            echo json_encode(['status' => 'success']);
+        } catch (\PDOException $e) {
+            echo json_encode(['status' => 'error', 'message' => 'มีนิสิตคนนี้แล้ว']);
+        }
+    }
+
+    elseif ($action === 'remove_member') {
+        $stmt = $pdo->prepare("DELETE FROM classroom_members WHERE classroom_id = ? AND student_id = ?");
+        $stmt->execute([$input['class_id'], $input['student_id_to_remove']]);
+        echo json_encode(['status' => 'success']);
+    }
+
+} catch (Exception $e) {
+    echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
 }
 ?>
