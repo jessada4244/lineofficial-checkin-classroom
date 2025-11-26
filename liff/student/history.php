@@ -14,45 +14,47 @@
 </head>
 <body class="bg-gray-50 min-h-screen">
 
-    <div class="bg-white p-5 shadow-sm sticky top-0 z-10 border-b border-gray-100">
-        <div class="flex items-center gap-3">
-            <button onclick="window.history.back()" class="text-gray-400 hover:text-gray-600">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                </svg>
-            </button>
-            <div>
-                <h1 class="text-lg font-bold text-gray-800 leading-tight" id="subjectName">กำลังโหลด...</h1>
-                <p class="text-xs text-blue-600 font-medium" id="courseCode">...</p>
-            </div>
+    <div class="bg-white px-5 py-4 shadow-sm sticky top-0 z-10 border-b border-gray-100 flex items-center gap-4">
+        <button onclick="window.history.back()" class="bg-gray-100 hover:bg-gray-200 p-2 rounded-full transition text-gray-600">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+        </button>
+        <div>
+            <h1 class="text-lg font-bold text-gray-800 leading-none" id="subjectName">Loading...</h1>
+            <p class="text-xs text-blue-500 font-bold mt-1" id="courseCode">...</p>
         </div>
     </div>
 
     <div class="grid grid-cols-2 gap-3 p-4">
-        <div class="bg-green-50 p-3 rounded-xl border border-green-100 text-center">
-            <p class="text-xs text-green-600 mb-1">เข้าเรียน (ครั้ง)</p>
-            <p id="countPresent" class="text-2xl font-bold text-green-700">-</p>
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-green-100 flex flex-col items-center">
+            <div class="bg-green-100 text-green-600 w-8 h-8 rounded-full flex items-center justify-center mb-2 text-xs font-bold">✓</div>
+            <p class="text-xs text-gray-400 mb-0.5">เข้าเรียน (ครั้ง)</p>
+            <p id="countPresent" class="text-2xl font-bold text-gray-800">-</p>
         </div>
-        <div class="bg-yellow-50 p-3 rounded-xl border border-yellow-100 text-center">
-            <p class="text-xs text-yellow-600 mb-1">มาสาย (ครั้ง)</p>
-            <p id="countLate" class="text-2xl font-bold text-yellow-700">-</p>
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-yellow-100 flex flex-col items-center">
+            <div class="bg-yellow-100 text-yellow-600 w-8 h-8 rounded-full flex items-center justify-center mb-2 text-xs font-bold">!</div>
+            <p class="text-xs text-gray-400 mb-0.5">มาสาย (ครั้ง)</p>
+            <p id="countLate" class="text-2xl font-bold text-gray-800">-</p>
         </div>
     </div>
+
+    <h2 class="px-5 text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">รายการล่าสุด</h2>
 
     <div id="historyList" class="px-4 pb-10 space-y-3">
         <div class="text-center py-10 text-gray-400">กำลังโหลดข้อมูล...</div>
     </div>
 
     <script>
-        const LIFF_ID = "2008562649-LEXWJgaD"; // ใช้ ID เดียวกับ class_list
+        // *** ใช้ LIFF ID เดียวกับ class_list.php ได้เลยครับ ***
+        const LIFF_ID = "2008562649-LEXWJgaD"; 
         const CLASS_ID = (new URLSearchParams(window.location.search)).get('class_id');
 
         async function main() {
             if (!CLASS_ID) return alert("ไม่พบรหัสวิชา");
-            await liff.init({ liffId: LIFF_ID });
-            if (!liff.isLoggedIn()) liff.login();
-            
-            loadHistory();
+            try {
+                await liff.init({ liffId: LIFF_ID });
+                if (!liff.isLoggedIn()) liff.login();
+                loadHistory();
+            } catch (err) { alert("LIFF Error"); }
         }
         main();
 
@@ -68,7 +70,7 @@
                 if (res.data.status === 'success') {
                     renderPage(res.data);
                 } else {
-                    document.getElementById('historyList').innerHTML = `<p class="text-center text-red-500 mt-10">${res.data.message}</p>`;
+                    document.getElementById('historyList').innerHTML = `<p class="text-center text-red-400 mt-10">${res.data.message}</p>`;
                 }
             } catch (err) {
                 console.error(err);
@@ -88,7 +90,8 @@
 
             if (data.history.length === 0) {
                 list.innerHTML = `
-                    <div class="text-center py-10 opacity-50">
+                    <div class="text-center py-12 opacity-40">
+                        <svg class="w-16 h-16 mx-auto mb-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                         <p>ยังไม่มีประวัติการเช็คชื่อ</p>
                     </div>`;
                 document.getElementById('countPresent').innerText = 0;
@@ -101,36 +104,36 @@
                 if (h.status === 'present') present++;
                 else if (h.status === 'late') late++;
 
-                // แปลงวันที่และเวลา
+                // Format DateTime
                 const dateObj = new Date(h.checkin_time);
                 const dateStr = dateObj.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' });
                 const timeStr = dateObj.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
 
-                // กำหนดสีตามสถานะ
+                // UI Status
                 const isLate = h.status === 'late';
                 const statusText = isLate ? 'มาสาย' : 'ทันเวลา';
-                const statusColor = isLate ? 'text-yellow-600 bg-yellow-50 border-yellow-100' : 'text-green-600 bg-green-50 border-green-100';
-                const icon = isLate ? '⚠️' : '✅';
+                const statusBg = isLate ? 'bg-yellow-50 border-yellow-100' : 'bg-white border-gray-100';
+                const iconBg = isLate ? 'bg-yellow-100 text-yellow-600' : 'bg-green-100 text-green-600';
+                const icon = isLate ? '!' : '✓';
 
                 list.innerHTML += `
-                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center">
+                    <div class="${statusBg} p-4 rounded-xl shadow-sm border flex justify-between items-center transition hover:shadow-md">
                         <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full flex items-center justify-center text-lg bg-gray-50">
+                            <div class="${iconBg} w-10 h-10 rounded-full flex items-center justify-center font-bold">
                                 ${icon}
                             </div>
                             <div>
                                 <p class="text-sm font-bold text-gray-800">${dateStr}</p>
-                                <p class="text-xs text-gray-400">เวลา ${timeStr}</p>
+                                <p class="text-xs text-gray-400">เวลา ${timeStr} น.</p>
                             </div>
                         </div>
-                        <span class="text-xs font-bold px-3 py-1 rounded-full border ${statusColor}">
+                        <span class="text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wide ${isLate ? 'bg-yellow-200 text-yellow-800' : 'bg-green-100 text-green-700'}">
                             ${statusText}
                         </span>
                     </div>
                 `;
             });
 
-            // อัปเดตตัวเลขสรุป
             document.getElementById('countPresent').innerText = present;
             document.getElementById('countLate').innerText = late;
         }
