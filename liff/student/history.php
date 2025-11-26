@@ -45,7 +45,7 @@
 
     <script>
         // *** ใช้ LIFF ID เดียวกับ class_list.php ได้เลยครับ ***
-        const LIFF_ID = "2008562649-LEXWJgaD"; 
+        const LIFF_ID = "2008573640-jb4bpE5J"; 
         const CLASS_ID = (new URLSearchParams(window.location.search)).get('class_id');
 
         async function main() {

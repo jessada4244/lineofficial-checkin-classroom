@@ -46,7 +46,7 @@
 
     <script>
         // *** ใช้ LIFF ID เดียวกับ manage_class.php ได้เลย ***
-        const LIFF_ID = "2008562649-bkoEQOMg"; 
+        const LIFF_ID = "2008573640-qQxJWXLz"; 
         const CLASS_ID = (new URLSearchParams(window.location.search)).get('class_id');
 
         async function main() {

@@ -135,7 +135,7 @@
     <input type="hidden" id="current_lat"><input type="hidden" id="current_lng">
 
     <script>
-        const LIFF_ID = "2008562649-bkoEQOMg"; 
+        const LIFF_ID = "2008573640-qQxJWXLz"; 
         const CLASS_ID = (new URLSearchParams(window.location.search)).get('class_id');
         const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4'];
         let map, marker, classData = {};

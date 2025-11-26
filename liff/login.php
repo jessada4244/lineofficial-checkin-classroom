@@ -41,7 +41,7 @@
 
     <script>
         // *** ใส่ LIFF ID ของหน้า Login ตรงนี้ ***
-        const LIFF_ID = "2008562649-3z1WPZD2"; 
+        const LIFF_ID = "2008573640-9pYeN4Dn"; 
 
         async function main() {
             try {

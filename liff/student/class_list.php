@@ -47,7 +47,7 @@
     </div>
 
     <script>
-        const LIFF_ID = "2008562649-LEXWJgaD"; 
+        const LIFF_ID = "2008573640-jb4bpE5J"; 
 
         async function main() {
             try {

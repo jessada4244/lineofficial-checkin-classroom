@@ -82,7 +82,7 @@
     </div>
 
     <script>
-        const LIFF_ID = "2008562649-wd4qyoDN"; // สร้าง LIFF ใหม่สำหรับหน้านี้
+        const LIFF_ID = "2008573640-Z1aN5Eyn"; // สร้าง LIFF ใหม่สำหรับหน้านี้
         let lineUserId = ""; // ตัวแปรเก็บ UserId
 
         // 1. เริ่มต้น LIFF
