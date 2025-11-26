@@ -99,8 +99,10 @@
                     const subTextColor = isDarkColor(c.room_color) ? 'text-white/80' : 'text-gray-600';
                     const badgeBg = isDarkColor(c.room_color) ? 'bg-white/20' : 'bg-gray-200';
 
+                    // ... (ส่วนแสดงการ์ดใน loadClasses)
+
                     list.innerHTML += `
-                        <div style="background-color: ${c.room_color};" class="relative p-5 rounded-2xl shadow-lg transition transform active:scale-98">
+                        <div style="background-color: ${c.room_color};" class="relative p-5 rounded-2xl shadow-lg transition transform active:scale-98 mb-4">
                             <div class="flex justify-between items-start">
                                 <div class="w-2/3">
                                     <span class="text-xs font-bold px-2 py-0.5 rounded ${badgeBg} ${textColor} mb-2 inline-block">
@@ -111,10 +113,20 @@
                                         🔑 Code: <span class="font-mono font-bold">${c.class_code}</span>
                                     </p>
                                 </div>
-                                <button onclick="goToEditClass(${c.id})" 
-                                    class="absolute top-5 right-5 w-10 h-10 bg-white/20 hover:bg-white/40 backdrop-blur-md rounded-full text-xs font-bold ${textColor} shadow-sm border border-white/30 flex items-center justify-center">
-                                    ⚙️
-                                </button>
+
+                                <div class="absolute top-4 right-4 flex flex-col gap-2">
+                                    
+                                    <button onclick="goToEditClass(${c.id})" 
+                                        class="w-10 h-10 bg-white/20 hover:bg-white/40 backdrop-blur-md rounded-full text-xs font-bold ${textColor} shadow-sm border border-white/30 flex items-center justify-center">
+                                        ⚙️
+                                    </button>
+
+                                    <button onclick="goToReport(${c.id})" 
+                                        class="w-10 h-10 bg-white/20 hover:bg-white/40 backdrop-blur-md rounded-full text-xs font-bold ${textColor} shadow-sm border border-white/30 flex items-center justify-center">
+                                        📊
+                                    </button>
+
+                                </div>
                             </div>
                         </div>
                     `;
@@ -197,6 +209,9 @@
             return luma < 128; 
         }
         function goToEditClass(id) { window.location.href = './edit_class.php?class_id=' + id; }
+        function goToReport(id) { 
+            window.location.href = './checkin_report.php?class_id=' + id; 
+        }
     </script>
 </body>
 </html>

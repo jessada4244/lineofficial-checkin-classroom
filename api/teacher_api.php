@@ -183,6 +183,75 @@ try {
             throw $e;
         }
     }
+    // ... (ต่อจาก delete_class)
+
+    // --- Action: ดูรายงานเช็คชื่อรายวัน (Daily Report) ---
+    elseif ($action === 'get_daily_report') {
+        $classId = $input['class_id'];
+        $date = $input['date'] ?? date('Y-m-d'); // ถ้าไม่ส่งวันที่มา ใช้วันปัจจุบัน
+
+        // 1. ดึงรายชื่อนิสิตทุกคนในห้อง (เรียงตามรหัส)
+        $sqlStudents = "SELECT u.id, u.student_id, u.name 
+                        FROM classroom_members cm
+                        JOIN users u ON cm.student_id = u.id
+                        WHERE cm.classroom_id = ?
+                        ORDER BY u.student_id ASC";
+        $stmtStd = $pdo->prepare($sqlStudents);
+        $stmtStd->execute([$classId]);
+        $allStudents = $stmtStd->fetchAll();
+
+        // 2. ดึงข้อมูลการเช็คชื่อของวันที่เลือก
+        $sqlAttend = "SELECT student_id, status, checkin_time, location_lat, location_lng 
+                      FROM attendance 
+                      WHERE classroom_id = ? AND DATE(checkin_time) = ?";
+        $stmtAtt = $pdo->prepare($sqlAttend);
+        $stmtAtt->execute([$classId, $date]);
+        $attendanceData = $stmtAtt->fetchAll();
+
+        // แปลงข้อมูลเช็คชื่อให้อยู่ในรูปแบบ Key-Value (student_id -> data) เพื่อหาง่ายๆ
+        $attendanceMap = [];
+        foreach ($attendanceData as $row) {
+            $attendanceMap[$row['student_id']] = $row;
+        }
+
+        // 3. รวมข้อมูล (Merge) เพื่อระบุสถานะของแต่ละคน
+        $report = [];
+        $summary = ['present' => 0, 'late' => 0, 'absent' => 0];
+
+        foreach ($allStudents as $std) {
+            $sid = $std['id'];
+            $status = 'absent'; // ค่าเริ่มต้นคือ ขาดเรียน
+            $time = '-';
+            
+            if (isset($attendanceMap[$sid])) {
+                $status = $attendanceMap[$sid]['status']; // present หรือ late
+                $time = date('H:i', strtotime($attendanceMap[$sid]['checkin_time']));
+            }
+
+            // นับยอดรวม
+            $summary[$status]++;
+
+            $report[] = [
+                'student_id' => $std['student_id'],
+                'name' => $std['name'],
+                'status' => $status,
+                'checkin_time' => $time
+            ];
+        }
+
+        // ดึงชื่อวิชา
+        $stmtClass = $pdo->prepare("SELECT subject_name FROM classrooms WHERE id = ?");
+        $stmtClass->execute([$classId]);
+        $subject = $stmtClass->fetchColumn();
+
+        echo json_encode([
+            'status' => 'success',
+            'subject_name' => $subject,
+            'date' => $date,
+            'summary' => $summary,
+            'report' => $report
+        ]);
+    }
 
 } catch (Exception $e) {
     echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
