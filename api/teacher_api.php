@@ -73,39 +73,50 @@ try {
         echo json_encode(['status' => 'success', 'class' => $class]);
     }
 // --- Update Class (แบบ Dynamic: ส่งค่าไหนมา แก้แค่นั้น) ---
+    // --- Update Class (แก้ใหม่: ระบุตัวแปรชัดเจน ป้องกันการไม่อัปเดต) ---
     elseif ($action === 'update_class') {
         $classId = $input['class_id'];
         
-        // รายชื่อฟิลด์ที่อนุญาตให้แก้ไขได้
-        $allowedFields = ['subject_name', 'course_code', 'room_color', 'checkin_limit_time', 'lat', 'lng', 'class_code'];
+        // รับค่าจาก input (ถ้าไม่ส่งมา ให้เป็น null)
+        $name = $input['name'] ?? null;
+        $courseCode = $input['course_code'] ?? null;
+        $roomColor = $input['color'] ?? null;
         
-        $setClauses = [];
+        // ** จุดสำคัญ: รับค่า time มาใส่ checkin_limit_time **
+        $time = $input['time'] ?? null; 
+        
+        // พิกัด
+        $lat = $input['lat'] ?? null;
+        $lng = $input['lng'] ?? null;
+
+        // เริ่มสร้าง SQL แบบ Dynamic
+        $sqlParts = [];
         $params = [];
 
-        // วนลูปเช็คว่า Front-end ส่งค่าอะไรมาบ้าง
-        foreach ($allowedFields as $field) {
-            if (array_key_exists($field, $input)) {
-                $setClauses[] = "$field = ?";
-                
-                // จัดการค่าว่างสำหรับ Lat/Lng ให้เป็น NULL
-                $val = $input[$field];
-                if (($field == 'lat' || $field == 'lng') && $val === '') {
-                    $val = NULL;
-                }
-                $params[] = $val;
-            }
+        if ($name !== null) { $sqlParts[] = "subject_name = ?"; $params[] = $name; }
+        if ($courseCode !== null) { $sqlParts[] = "course_code = ?"; $params[] = $courseCode; }
+        if ($roomColor !== null) { $sqlParts[] = "room_color = ?"; $params[] = $roomColor; }
+        
+        // แก้ปัญหาเวลาไม่บันทึก
+        if ($time !== null) { $sqlParts[] = "checkin_limit_time = ?"; $params[] = $time; }
+        
+        // แก้ปัญหาพิกัด
+        if ($lat !== null) { 
+            $sqlParts[] = "lat = ?"; $params[] = ($lat === '' ? NULL : $lat); 
+        }
+        if ($lng !== null) { 
+            $sqlParts[] = "lng = ?"; $params[] = ($lng === '' ? NULL : $lng); 
         }
 
-        if (empty($setClauses)) {
-            echo json_encode(['status' => 'success', 'message' => 'ไม่มีการเปลี่ยนแปลง']);
+        if (empty($sqlParts)) {
+            echo json_encode(['status' => 'success', 'message' => 'Nothing to update']);
             exit;
         }
 
-        // เพิ่มเงื่อนไข WHERE
+        // ต่อ SQL
+        $sql = "UPDATE classrooms SET " . implode(', ', $sqlParts) . " WHERE id = ? AND teacher_id = ?";
         $params[] = $classId;
         $params[] = $teacherId;
-
-        $sql = "UPDATE classrooms SET " . implode(', ', $setClauses) . " WHERE id = ? AND teacher_id = ?";
         
         $stmt = $pdo->prepare($sql);
         if ($stmt->execute($params)) {
@@ -139,6 +150,38 @@ try {
         $stmt = $pdo->prepare("DELETE FROM classroom_members WHERE classroom_id = ? AND student_id = ?");
         $stmt->execute([$input['class_id'], $input['student_id_to_remove']]);
         echo json_encode(['status' => 'success']);
+    }
+    // --- Action: ลบห้องเรียน (Delete Class) ---
+    elseif ($action === 'delete_class') {
+        $classId = $input['class_id'];
+
+        try {
+            // เริ่ม Transaction (เพื่อให้ลบทุกอย่างพร้อมกัน)
+            $pdo->beginTransaction();
+
+            // 1. ลบสมาชิกในห้อง (classroom_members)
+            $stmt1 = $pdo->prepare("DELETE FROM classroom_members WHERE classroom_id = ?");
+            $stmt1->execute([$classId]);
+
+            // 2. ลบประวัติการเช็คชื่อ (attendance) - ถ้ามีตารางนี้
+            $stmt2 = $pdo->prepare("DELETE FROM attendance WHERE classroom_id = ?");
+            $stmt2->execute([$classId]);
+
+            // 3. ลบตัวห้องเรียน (classrooms)
+            $stmt3 = $pdo->prepare("DELETE FROM classrooms WHERE id = ? AND teacher_id = ?");
+            $stmt3->execute([$classId, $teacherId]);
+
+            if ($stmt3->rowCount() > 0) {
+                $pdo->commit(); // ยืนยันการลบ
+                echo json_encode(['status' => 'success']);
+            } else {
+                $pdo->rollBack(); // ยกเลิกถ้าลบไม่ได้
+                echo json_encode(['status' => 'error', 'message' => 'ลบไม่สำเร็จ หรือคุณไม่ใช่เจ้าของห้อง']);
+            }
+        } catch (Exception $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
     }
 
 } catch (Exception $e) {
