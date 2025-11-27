@@ -12,46 +12,80 @@
         body { font-family: 'Sarabun', sans-serif; }
     </style>
 </head>
-<body class="bg-gray-100 flex items-center justify-center h-screen px-4">
+<body class="bg-blue-50 flex items-center justify-center min-h-screen px-4">
 
-    <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-sm">
+    <div id="loading" class="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center">
+        <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-3"></div>
+        <p class="text-gray-500 text-sm">กำลังยืนยันตัวตน...</p>
+    </div>
+
+    <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-sm hidden" id="loginCard">
         <div class="text-center mb-6">
-            <h1 class="text-2xl font-bold text-gray-800">เข้าสู่ระบบ</h1>
-            <p class="text-sm text-gray-500">ระบบเช็คชื่อด้วย LINE Official</p>
+            <h1 class="text-2xl font-bold text-gray-800">ยินดีต้อนรับ</h1>
+            <p class="text-xs text-gray-400 mt-1">เข้าสู่ระบบเพื่อใช้งาน</p>
+            
+            <div id="lineProfile" class="mt-4 flex flex-col items-center animate-pulse">
+                <img id="profileImage" src="https://via.placeholder.com/150" class="w-20 h-20 rounded-full border-4 border-blue-100 mb-2 shadow-sm object-cover">
+                <p id="profileName" class="font-bold text-gray-700 text-lg">Loading...</p>
+                <div class="flex items-center gap-1 mt-1 bg-green-50 px-3 py-1 rounded-full border border-green-100">
+                    <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span class="text-[10px] text-green-700 font-bold">LINE Verified</span>
+                </div>
+            </div>
         </div>
 
-        <div id="status" class="hidden mb-4 p-3 rounded-lg text-sm text-center"></div>
+        <div id="status" class="hidden mb-4 p-3 rounded-lg text-sm text-center border"></div>
 
-        <form id="loginForm" onsubmit="handleLogin(event)">
-            <div class="mb-4">
-                <label class="block text-gray-700 text-sm font-bold mb-2">ชื่อผู้ใช้งาน</label>
-                <input type="text" id="username" class="w-full px-3 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50" placeholder="Username" required>
+        <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
+            <div>
+                <label class="block text-gray-700 text-xs font-bold mb-1 ml-1">ชื่อผู้ใช้งาน</label>
+                <input type="text" id="username" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 transition" placeholder="ระบุ Username" required>
             </div>
             
-            <div class="mb-6">
-                <label class="block text-gray-700 text-sm font-bold mb-2">รหัสผ่าน</label>
-                <input type="password" id="password" class="w-full px-3 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50" placeholder="Password" required>
+            <div>
+                <label class="block text-gray-700 text-xs font-bold mb-1 ml-1">รหัสผ่าน</label>
+                <input type="password" id="password" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 transition" placeholder="ระบุ Password" required>
             </div>
             
-            <button type="submit" id="btnLogin" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition shadow-lg transform active:scale-95">
+            <button type="submit" id="btnLogin" class="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl hover:bg-blue-700 transition shadow-lg shadow-blue-200 transform active:scale-95 mt-2">
                 เข้าสู่ระบบ
             </button>
         </form>
+        
+        <p class="text-center text-xs text-gray-400 mt-6">
+            ยังไม่มีบัญชี? <a href="./register.php" class="text-blue-600 font-bold hover:underline">ลงทะเบียนที่นี่</a>
+        </p>
     </div>
 
     <script>
         // *** ใส่ LIFF ID ของหน้า Login ตรงนี้ ***
         const LIFF_ID = "2008573640-9pYeN4Dn"; 
-        
+        let currentLineUserId = "";
 
         async function main() {
             try {
                 await liff.init({ liffId: LIFF_ID });
                 if (!liff.isLoggedIn()) {
                     liff.login();
+                } else {
+                    const profile = await liff.getProfile();
+                    currentLineUserId = profile.userId;
+
+                    // แสดงข้อมูลโปรไฟล์
+                    if (profile.pictureUrl) {
+                        document.getElementById('profileImage').src = profile.pictureUrl;
+                    }
+                    document.getElementById('profileName').innerText = profile.displayName;
+                    document.getElementById('lineProfile').classList.remove('animate-pulse');
+
+                    // เปิดหน้าจอ Login
+                    document.getElementById('loading').classList.add('hidden');
+                    document.getElementById('loginCard').classList.remove('hidden');
                 }
             } catch (err) {
-                showStatus('error', 'LIFF Init Failed: ' + err.message);
+                showStatus('error', 'LIFF Error: ' + err.message);
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('loginCard').classList.remove('hidden');
             }
         }
         main();
@@ -63,43 +97,36 @@
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
 
-            // ล็อคปุ่มกันกดซ้ำ
+            if (!currentLineUserId) return showStatus('error', 'ไม่พบข้อมูล LINE กรุณารีโหลด');
+
+            // UI Loading
             btn.disabled = true;
             btn.innerHTML = `<svg class="animate-spin h-5 w-5 mr-2 inline" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> กำลังตรวจสอบ...`;
             showStatus('loading', '');
 
             try {
-                const profile = await liff.getProfile();
-                
-                // ยิง API Login
+                // ส่งข้อมูลไปตรวจสอบที่ Backend
                 const res = await axios.post('../api/login.php', {
                     username: username,
                     password: password,
-                    lineUserId: profile.userId
+                    lineUserId: currentLineUserId // ส่ง UID ไปเช็คด้วย
                 });
 
                 if (res.data.status === 'success') {
-                    showStatus('success', 'เข้าสู่ระบบสำเร็จ! กำลังเปลี่ยนหน้า...');
+                    showStatus('success', 'เข้าสู่ระบบสำเร็จ! กำลังพาไปหน้าหลัก...');
                     
-                    // รอ 1 วินาทีให้คนอ่านทัน แล้วค่อยไปต่อ
                     setTimeout(() => {
                         const role = res.data.role;
-
-                        // 1. ลองสั่งปิดหน้าต่าง (เพื่อให้กลับไปเจอ Rich Menu ใหม่)
+                        // ปิดหน้าต่างเพื่อให้กลับไปเจอ Rich Menu ใหม่
                         if (liff.isInClient()) {
                             liff.closeWindow(); 
-                        } 
-                        
-                        // 2. ถ้าปิดไม่ได้ (เช่นเปิดในคอม/Chrome) ให้เด้งไปหน้าหลักของ Role นั้นๆ
-                        // หรือถ้าปิดได้ บรรทัดล่างๆ นี้จะไม่ทำงาน เพราะหน้าต่างปิดไปแล้ว
-                        if (role === 'teacher') {
-                            window.location.href = 'teacher/manage_class.php';
-                        } else if (role === 'student') {
-                            window.location.href = 'student/class_list.php';
-                        } else if (role === 'admin') {
-                            alert("Admin Login Success"); // Admin อาจจะไม่มีหน้ามือถือ
+                        } else {
+                            // กรณีเปิดใน Browser ปกติ
+                            if (role === 'teacher') window.location.href = 'teacher/manage_class.php';
+                            else if (role === 'student') window.location.href = 'student/class_list.php';
+                            else if (role === 'admin') alert("Admin Login Success");
                         }
-                    }, 1000);
+                    }, 1500);
 
                 } else {
                     showStatus('error', res.data.message);
@@ -108,21 +135,21 @@
 
             } catch (err) {
                 console.error(err);
-                showStatus('error', 'ติดต่อ Server ไม่ได้ หรือรหัสผิดพลาด');
+                showStatus('error', 'เชื่อมต่อ Server ไม่ได้');
                 resetBtn();
             }
         }
 
         function showStatus(type, msg) {
             const el = document.getElementById('status');
-            el.classList.remove('hidden', 'bg-red-100', 'text-red-700', 'bg-green-100', 'text-green-700');
+            el.classList.remove('hidden', 'bg-red-50', 'text-red-600', 'border-red-200', 'bg-green-50', 'text-green-600', 'border-green-200');
             
             if (type === 'error') {
-                el.classList.add('bg-red-100', 'text-red-700');
-                el.innerText = '❌ ' + msg;
+                el.classList.add('bg-red-50', 'text-red-600', 'border-red-200');
+                el.innerText = '⚠️ ' + msg;
                 el.classList.remove('hidden');
             } else if (type === 'success') {
-                el.classList.add('bg-green-100', 'text-green-700');
+                el.classList.add('bg-green-50', 'text-green-600', 'border-green-200');
                 el.innerText = '✅ ' + msg;
                 el.classList.remove('hidden');
             } else {

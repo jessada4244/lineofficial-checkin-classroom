@@ -1,82 +1,79 @@
 <?php
-// auto_update_menu.php
-// สคริปต์อัปเดตเมนูแบบ One-Stop Service (ลบเก่า -> สร้างใหม่ -> แก้ Config ให้เอง)
-
 header('Content-Type: text/html; charset=utf-8');
 require_once 'config/line_config.php';
 
-// 1. เก็บ Token เดิมไว้ก่อน (เดี๋ยวต้องใช้เขียนกลับลงไฟล์)
 $oldToken  = CHANNEL_ACCESS_TOKEN;
 $oldSecret = CHANNEL_SECRET;
-$imagePathPrefix = 'assets/images/'; 
+$imagePathPrefix = 'assets/images/';
 
-// 2. กำหนดโครงสร้างเมนู (เหมือนเดิม)
+
+// สร้างเมนู
+
 $menus = [
     'guest' => [
         'name' => 'Guest Menu',
-        'image' => $imagePathPrefix . 'guest.jpg', // เปลี่ยนชื่อรูปให้ตรงกับที่มีจริง
+        'image' => $imagePathPrefix . 'guest.jpg',
         'areas' => [
-            [ "bounds" => ["x"=>0, "y"=>0, "width"=>833, "height"=>843], "action" => ["type"=>"message", "text"=>"ติดต่อเจ้าหน้าที่"] ],
-            [ "bounds" => ["x"=>833, "y"=>0, "width"=>833, "height"=>843], "action" => ["type"=>"uri", "uri"=> "https://liff.line.me/2008573640-Z1aN5Eyn"] ], // **อย่าลืมแก้ Link**
-            [ "bounds" => ["x"=>1666, "y"=>0, "width"=>834, "height"=>843], "action" => ["type"=>"uri", "uri"=> "https://liff.line.me/2008573640-9pYeN4Dn"] ]   // **อย่าลืมแก้ Link**
+            [ "bounds"=>["x"=>0,"y"=>0,"width"=>833,"height"=>843], "action"=>["type"=>"message","text"=>"ติดต่อเจ้าหน้าที่"] ],
+            [ "bounds"=>["x"=>833,"y"=>0,"width"=>833,"height"=>843], "action"=>["type"=>"uri","uri"=>"https://liff.line.me/xxxx"] ],
+            [ "bounds"=>["x"=>1666,"y"=>0,"width"=>834,"height"=>843], "action"=>["type"=>"uri","uri"=>"https://liff.line.me/yyyy"] ]
         ]
     ],
     'admin' => [
         'name' => 'Admin Menu',
         'image' => $imagePathPrefix . 'admin.jpg',
         'areas' => [
-            [ "bounds" => ["x"=>0, "y"=>0, "width"=>833, "height"=>843], "action" => ["type"=>"uri", "uri"=> "https://liff.line.me/2008573640-Xlr1jY4w"] ],     // **อย่าลืมแก้ Link**
-            [ "bounds" => ["x"=>833, "y"=>0, "width"=>833, "height"=>843], "action" => ["type"=>"message", "text"=>"เมนูประกาศ"] ],
-            [ "bounds" => ["x"=>1666, "y"=>0, "width"=>834, "height"=>843], "action" => ["type"=>"message", "text"=>"Admin Tools"] ]
+            [ "bounds"=>["x"=>0,"y"=>0,"width"=>833,"height"=>843], "action"=>["type"=>"uri","uri"=>"https://liff.line.me/admin"] ],
+            [ "bounds"=>["x"=>833,"y"=>0,"width"=>833,"height"=>843], "action"=>["type"=>"message","text"=>"เมนูประกาศ"] ],
+            [ "bounds"=>["x"=>1666,"y"=>0,"width"=>834,"height"=>843], "action"=>["type"=>"message","text"=>"Admin Tools"] ]
         ]
     ],
     'teacher' => [
         'name' => 'Teacher Menu',
         'image' => $imagePathPrefix . 'teacher.jpg',
         'areas' => [
-            [ "bounds" => ["x"=>0, "y"=>0, "width"=>833, "height"=>843], "action" => ["type"=>"uri", "uri"=> "https://liff.line.me/2008573640-qQxJWXLz"] ],   // **อย่าลืมแก้ Link**
-            [ "bounds" => ["x"=>833, "y"=>0, "width"=>1667, "height"=>843], "action" => ["type"=>"uri", "uri"=> "https://liff.line.me/2008573640-qQxJWXLz"] ] // **อย่าลืมแก้ Link**
+            [ "bounds"=>["x"=>0,"y"=>0,"width"=>833,"height"=>843], "action"=>["type"=>"uri","uri"=>"https://liff.line.me/teacher"] ],
+            [ "bounds"=>["x"=>833,"y"=>0,"width"=>1667,"height"=>843], "action"=>["type"=>"uri","uri"=>"https://liff.line.me/teacher2"] ]
         ]
     ],
     'student' => [
         'name' => 'Student Menu',
-        'image' => $imagePathPrefix . 'student.jpg',
+        'image' => $imagePathPrefix . 'student.png',
         'areas' => [
-            [ "bounds" => ["x"=>0, "y"=>0, "width"=>833, "height"=>843], "action" => ["type"=>"uri", "uri"=> "https://liff.line.me/2008573640-jb4bpE5J"] ],   // **อย่าลืมแก้ Link**
-            [ "bounds" => ["x"=>833, "y"=>0, "width"=>833, "height"=>843], "action" => ["type"=>"uri", "uri"=> "https://liff.line.me/2008573640-jb4bpE5J"] ], // **อย่าลืมแก้ Link**
-            [ "bounds" => ["x"=>1666, "y"=>0, "width"=>834, "height"=>843], "action" => ["type"=>"message", "text"=>"คู่มือการใช้งาน"] ]
+            [ "bounds"=>["x"=>0,"y"=>0,"width"=>833,"height"=>843], "action"=>["type"=>"uri","uri"=>"https://liff.line.me/student"] ],
+            [ "bounds"=>["x"=>833,"y"=>0,"width"=>833,"height"=>843], "action"=>["type"=>"uri","uri"=>"https://liff.line.me/student"] ],
+            [ "bounds"=>["x"=>1666,"y"=>0,"width"=>834,"height"=>843], "action"=>["type"=>"message","text"=>"คู่มือการใช้งาน"] ]
         ]
     ]
 ];
 
-echo "<pre><h1>🚀 เริ่มกระบวนการอัปเดตอัตโนมัติ</h1>";
+ob_start(); // จับข้อความทั้งหมดเพื่อนำไปใส่ UI
 
-// -----------------------------------------------------
-// STEP 1: ลบเมนูเก่าทิ้งให้หมด (Cleanup)
-// -----------------------------------------------------
-echo "1. กำลังลบเมนูเก่า... ";
+// ลบ Rich Menu เดิม
+
+echo "STEP 1: ลบเมนูเก่า...\n";
 $allMenus = getRichMenuList($oldToken);
+
 if (!empty($allMenus['richmenus'])) {
     foreach ($allMenus['richmenus'] as $m) {
         deleteRichMenu($oldToken, $m['richMenuId']);
     }
-    echo "✅ ลบเรียบร้อย (" . count($allMenus['richmenus']) . " รายการ)\n";
+    echo "✔ ลบทั้งหมด " . count($allMenus['richmenus']) . " รายการ\n\n";
 } else {
-    echo "⚪ ไม่มีเมนูเก่าค้างอยู่\n";
+    echo "ℹ ไม่มีข้อมูลเมนูค้างอยู่\n\n";
 }
 
-// -----------------------------------------------------
-// STEP 2: สร้างเมนูใหม่ + อัปโหลดรูป (Create & Upload)
-// -----------------------------------------------------
+// สร้างใหม่
+echo "STEP 2: สร้างเมนูใหม่...\n";
+
 $newIds = [];
-echo "2. กำลังสร้างเมนูใหม่...\n";
 
 foreach ($menus as $role => $config) {
+
     if (!file_exists($config['image'])) {
-        die("❌ Error: ไม่พบไฟล์รูปภาพ " . $config['image']);
+        die("❌ ไม่พบรูปภาพ: " . $config['image']);
     }
 
-    // สร้าง
     $jsonBody = json_encode([
         "size" => ["width" => 2500, "height" => 843],
         "selected" => false,
@@ -84,107 +81,101 @@ foreach ($menus as $role => $config) {
         "chatBarText" => "เมนูใช้งาน",
         "areas" => $config['areas']
     ]);
+
     $richMenuId = createRichMenu($oldToken, $jsonBody);
+    if (!$richMenuId) die("❌ สร้างเมนู $role ไม่สำเร็จ\n");
 
-    if ($richMenuId) {
-        // อัปรูป
-        $ext = pathinfo($config['image'], PATHINFO_EXTENSION);
-        $contentType = ($ext == 'png') ? 'image/png' : 'image/jpeg';
-        uploadRichMenuImage($oldToken, $richMenuId, $config['image'], $contentType);
-        
-        $newIds[$role] = $richMenuId;
-        echo "   - $role : สร้างเสร็จ (ID: $richMenuId)\n";
+    $ext = pathinfo($config['image'], PATHINFO_EXTENSION);
+    $contentType = ($ext == 'png') ? 'image/png' : 'image/jpeg';
+    uploadRichMenuImage($oldToken, $richMenuId, $config['image'], $contentType);
 
-        // ถ้าเป็น Guest ให้ตั้งเป็น Default เลย
-        if ($role === 'guest') {
-            setDefaultRichMenu($oldToken, $richMenuId);
-            echo "     -> ⭐ ตั้งเป็น Default เรียบร้อย\n";
-        }
-    } else {
-        die("❌ Error: สร้างเมนู $role ไม่สำเร็จ");
+    $newIds[$role] = $richMenuId;
+    echo "✔ $role : สร้างแล้ว ID = $richMenuId\n";
+
+    if ($role === "guest") {
+        setDefaultRichMenu($oldToken, $richMenuId);
+        echo "ตั้งเป็น Guest แล้ว\n";
     }
 }
+echo "\n";
 
-// -----------------------------------------------------
-// STEP 3: เขียนทับไฟล์ Config (Auto Write Config)
-// -----------------------------------------------------
-echo "3. กำลังอัปเดตไฟล์ config/line_config.php ... \n";
+// เขียน config ใหม่
 
-$configFileContent = "<?php\n";
-$configFileContent .= "define('CHANNEL_ACCESS_TOKEN', '$oldToken');\n";
-$configFileContent .= "define('CHANNEL_SECRET', '$oldSecret');\n\n";
+echo "STEP 3: อัปเดต config...\n";
+
+$config = "<?php\n";
+$config .= "define('CHANNEL_ACCESS_TOKEN', '$oldToken');\n";
+$config .= "define('CHANNEL_SECRET', '$oldSecret');\n\n";
 
 foreach ($newIds as $role => $id) {
-    $configFileContent .= "define('RICHMENU_" . strtoupper($role) . "', '$id');\n";
+    $config .= "define('RICHMENU_" . strtoupper($role) . "', '$id');\n";
 }
-$configFileContent .= "?>";
+$config .= "?>";
 
-// พยายามเขียนไฟล์ (ใส่ @ เพื่อซ่อน Error ตัวแดง)
-if (@file_put_contents('config/line_config.php', $configFileContent)) {
-    echo "✅ บันทึกไฟล์สำเร็จ!\n";
+if (@file_put_contents('config/line_config.php', $config)) {
+    echo "อัปเดตไฟล์ config สำเร็จ\n";
 } else {
-    // ถ้าเขียนไม่ได้ ให้แสดง Textarea ให้คนก๊อปปี้แทน
-    echo "❌ Error: เขียนไฟล์ไม่ได้ (ติด Permission)\n";
-    echo "------------------------------------------------------\n";
-    echo "⚠️ ไม่ต้องตกใจ! ให้ก๊อปปี้โค้ดในกล่องด้านล่าง \n";
-    echo "👉 ไปวางทับในไฟล์ 'config/line_config.php' ด้วยตัวเองครับ\n";
-    echo "------------------------------------------------------\n\n";
-    echo "<textarea rows='10' style='width:100%; padding:10px; background:#f0f0f0; border:1px solid #ccc; font-family:monospace;'>";
-    echo htmlspecialchars($configFileContent);
-    echo "</textarea>\n";
+    echo "เขียนทับไฟล์ไม่ได้ ดำเนินการแก้ไขไฟล์เอง\n";
+    echo "--------------------------------------------\n";
+    echo $config;
+    echo "--------------------------------------------\n";
 }
 
-echo "\n<h1>🎉 เสร็จสิ้นกระบวนการ!</h1>";
-echo "</pre>";
+$log = nl2br(ob_get_clean()); // แปลง log เป็น HTML
 
 
-// ================= HELPER FUNCTIONS =================
+?>
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>Auto Update Rich Menu</title>
+<style>
+body{font-family:"Prompt",sans-serif;background:#f7f8fc;margin:0;padding:40px;}
+.card{max-width:900px;margin:auto;background:#fff;padding:30px;border-radius:14px;box-shadow:0 4px 14px rgba(0,0,0,.08);}
+h1{color:#3630a3;margin-top:0;}
+pre{background:#272822;color:#f8f8f2;padding:20px;border-radius:8px;overflow:auto;font-size:15px;}
+.btn{display:block;margin:35px auto 0;background:#4b48df;color:#fff;border:none;padding:18px 60px;font-size:22px;border-radius:10px;cursor:pointer;transition:.3s;}
+.btn:hover{background:#3b39c8;}
+</style>
+</head>
+<body>
+<div class="card">
+    <h1>Update Rich Menu</h1>
+    <p>สถานะการทำงานของระบบ:</p>
+    <pre><?php echo $log; ?></pre>
+    <button class="btn" onclick="location.href='default.php'">ดำเนินการต่อ</button>
+</div>
+</body>
+</html>
 
-function getRichMenuList($token) {
-    $ch = curl_init("https://api.line.me/v2/bot/richmenu/list");
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, ["Authorization: Bearer $token"]);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    return json_decode(curl_exec($ch), true);
+
+<?php
+// ฟังก์ชัน
+function getRichMenuList($token){
+    $ch=curl_init("https://api.line.me/v2/bot/richmenu/list");
+    curl_setopt_array($ch,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_HTTPHEADER=>["Authorization: Bearer $token"]]);
+    return json_decode(curl_exec($ch),true);
 }
-
-function deleteRichMenu($token, $id) {
-    $ch = curl_init("https://api.line.me/v2/bot/richmenu/$id");
-    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'DELETE');
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, ["Authorization: Bearer $token"]);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+function deleteRichMenu($token,$id){
+    $ch=curl_init("https://api.line.me/v2/bot/richmenu/$id");
+    curl_setopt_array($ch,[CURLOPT_CUSTOMREQUEST=>"DELETE",CURLOPT_RETURNTRANSFER=>true,CURLOPT_HTTPHEADER=>["Authorization: Bearer $token"]]);
     curl_exec($ch);
 }
-
-function createRichMenu($token, $body) {
-    $ch = curl_init("https://api.line.me/v2/bot/richmenu");
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, ["Authorization: Bearer $token", "Content-Type: application/json"]);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    $data = json_decode(curl_exec($ch), true);
-    return $data['richMenuId'] ?? null;
+function createRichMenu($token,$body){
+    $ch=curl_init("https://api.line.me/v2/bot/richmenu");
+    curl_setopt_array($ch,[CURLOPT_POST=>true,CURLOPT_POSTFIELDS=>$body,CURLOPT_RETURNTRANSFER=>true,CURLOPT_HTTPHEADER=>["Authorization: Bearer $token","Content-Type: application/json"]]);
+    $data=json_decode(curl_exec($ch),true);
+    return $data['richMenuId']??null;
 }
-
-function uploadRichMenuImage($token, $id, $path, $type) {
-    $ch = curl_init("https://api-data.line.me/v2/bot/richmenu/$id/content");
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, file_get_contents($path));
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, ["Authorization: Bearer $token", "Content-Type: $type"]);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+function uploadRichMenuImage($token,$id,$path,$type){
+    $ch=curl_init("https://api-data.line.me/v2/bot/richmenu/$id/content");
+    curl_setopt_array($ch,[CURLOPT_POST=>true,CURLOPT_POSTFIELDS=>file_get_contents($path),CURLOPT_RETURNTRANSFER=>true,CURLOPT_HTTPHEADER=>["Authorization: Bearer $token","Content-Type:$type"]]);
     curl_exec($ch);
 }
-
-function setDefaultRichMenu($token, $id) {
-    $ch = curl_init("https://api.line.me/v2/bot/user/all/richmenu/$id");
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, ["Authorization: Bearer $token"]);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+function setDefaultRichMenu($token,$id){
+    $ch=curl_init("https://api.line.me/v2/bot/user/all/richmenu/$id");
+    curl_setopt_array($ch,[CURLOPT_POST=>true,CURLOPT_RETURNTRANSFER=>true,CURLOPT_HTTPHEADER=>["Authorization: Bearer $token"]]);
     curl_exec($ch);
 }
-
 ?>

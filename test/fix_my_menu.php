@@ -3,7 +3,7 @@
 // fix_my_menu.php
 require_once 'config/line_config.php';
 
-// *** ใส่ User ID ของคุณที่ก๊อปปี้มาตรงนี้ ***
+// *** ใส่ User ID  ***
 $myUserId = 'Ub7e74e1847e675152553e08898635861';
 
 // เลือกเมนูที่จะเทส (เอา Guest ก่อน)
