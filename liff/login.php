@@ -84,6 +84,7 @@
                 }
             } catch (err) {
                 showStatus('error', 'LIFF Error: ' + err.message);
+                // กรณี LIFF พัง ก็ยังให้ลอง Login ได้ (เผื่อ test ใน browser)
                 document.getElementById('loading').classList.add('hidden');
                 document.getElementById('loginCard').classList.remove('hidden');
             }
@@ -97,7 +98,10 @@
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
 
-            if (!currentLineUserId) return showStatus('error', 'ไม่พบข้อมูล LINE กรุณารีโหลด');
+            if (!currentLineUserId) {
+                // ถ้าไม่มี UID (เช่นเทสใน Browser แบบไม่ต่อ LIFF) ให้แจ้งเตือน แต่ถ้าอยากให้ผ่านได้ต้องแก้ Logic ที่ API
+                 return showStatus('error', 'ไม่พบข้อมูล LINE กรุณารีโหลด หรือเปิดใน LINE App');
+            }
 
             // UI Loading
             btn.disabled = true;
@@ -109,24 +113,28 @@
                 const res = await axios.post('../api/login.php', {
                     username: username,
                     password: password,
-                    lineUserId: currentLineUserId // ส่ง UID ไปเช็คด้วย
+                    lineUserId: currentLineUserId 
                 });
 
                 if (res.data.status === 'success') {
                     showStatus('success', 'เข้าสู่ระบบสำเร็จ! กำลังพาไปหน้าหลัก...');
                     
+                    const role = res.data.role;
+
+                    // หน่วงเวลาเล็กน้อยเพื่อให้เห็นข้อความ Success แล้ว Redirect
                     setTimeout(() => {
-                        const role = res.data.role;
-                        // ปิดหน้าต่างเพื่อให้กลับไปเจอ Rich Menu ใหม่
-                        if (liff.isInClient()) {
-                            liff.closeWindow(); 
+                        // *** จุดที่แก้ไข: สั่ง Redirect เสมอ (ลบ liff.closeWindow ออก) ***
+                        if (role === 'teacher') {
+                            window.location.href = './teacher/manage_class.php';
+                        } else if (role === 'student') {
+                            window.location.href = './student/class_list.php';
+                        } else if (role === 'admin') {
+                            window.location.href = './admin/dashboard.php'; 
                         } else {
-                            // กรณีเปิดใน Browser ปกติ
-                            if (role === 'teacher') window.location.href = 'teacher/manage_class.php';
-                            else if (role === 'student') window.location.href = 'student/class_list.php';
-                            else if (role === 'admin') alert("Admin Login Success");
+                            alert("ไม่พบ Role ที่ถูกต้อง (" + role + ")");
+                            resetBtn();
                         }
-                    }, 1500);
+                    }, 1000);
 
                 } else {
                     showStatus('error', res.data.message);
@@ -135,7 +143,7 @@
 
             } catch (err) {
                 console.error(err);
-                showStatus('error', 'เชื่อมต่อ Server ไม่ได้');
+                showStatus('error', 'เชื่อมต่อ Server ไม่ได้: ' + err.message);
                 resetBtn();
             }
         }

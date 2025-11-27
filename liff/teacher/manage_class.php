@@ -1,3 +1,7 @@
+<?php
+require_once '../../config/security.php';
+checkLogin('teacher'); // บังคับว่าเป็น teacher เท่านั้น
+?>
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -20,8 +24,13 @@
 <body class="bg-gray-100 p-4 min-h-screen">
 
     <div class="max-w-md mx-auto pb-20">
-        <h1 class="text-2xl font-bold mb-6 text-gray-800">รายวิชาของฉัน</h1>
-        
+        <div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold text-gray-800">รายวิชาของฉัน</h1>
+    <a href="../logout.php" onclick="return confirm('ต้องการออกจากระบบ?')" class="flex items-center gap-1 text-sm font-bold text-red-500 bg-red-50 px-3 py-2 rounded-lg hover:bg-red-100 transition">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+        ออก
+    </a>
+</div>
         <button onclick="openCreateModal()" 
                 class="w-full bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-xl shadow-lg flex justify-center items-center font-bold mb-6 transition transform active:scale-95">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">

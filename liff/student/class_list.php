@@ -1,3 +1,7 @@
+<?php
+require_once '../../config/security.php';
+checkLogin('student'); // บังคับว่าเป็น teacher เท่านั้น
+?>
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -14,10 +18,15 @@
 </head>
 <body class="bg-gray-100 min-h-screen pb-20">
 
-    <div class="bg-white p-4 shadow-sm sticky top-0 z-10">
+    <div class="bg-white p-4 shadow-sm sticky top-0 z-10 flex justify-between items-center">
+    <div>
         <h1 class="text-xl font-bold text-gray-800">📚 ห้องเรียนของฉัน</h1>
         <p class="text-xs text-gray-500" id="studentName">กำลังโหลด...</p>
     </div>
+    <a href="../logout.php" onclick="return confirm('ยืนยันการออกจากระบบ?')" class="bg-gray-100 p-2 rounded-full text-red-500 hover:bg-red-50 transition">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+    </a>
+</div>
 
     <div id="classList" class="p-4 space-y-4">
         <div class="text-center mt-10 text-gray-400">

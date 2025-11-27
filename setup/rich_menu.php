@@ -1,29 +1,48 @@
 <?php
+// setup/rich_menu.php
+// --------------------------------------------------------
+// 1. SECURITY CHECK (เพิ่มใหม่)
+// --------------------------------------------------------
+require_once '../config/security.php';
+// บังคับว่าต้อง Login เป็น Admin เท่านั้นถึงจะรันไฟล์นี้ได้
+checkLogin('admin'); 
+
 header('Content-Type: text/html; charset=utf-8');
-require_once 'config/line_config.php';
+
+// แก้ไข Path เรียกไฟล์ config (ถอยกลับ 1 ชั้น)
+require_once '../config/line_config.php';
 
 $oldToken  = CHANNEL_ACCESS_TOKEN;
 $oldSecret = CHANNEL_SECRET;
-$imagePathPrefix = 'assets/images/';
 
+// แก้ไข Path รูปภาพ (ถอยกลับ 1 ชั้น)
+$imagePathPrefix = '../assets/images/';
 
-// สร้างเมนู
+// ==========================================
+// 2. DEFINE MENUS
+// ==========================================
+// ลิงก์ LIFF ที่ใช้ (ควรแก้ให้ตรงกับของคุณ)
+$liff_login    = "https://liff.line.me/2008573640-9pYeN4Dn"; // แก้เป็น LIFF ID หน้า Login ของคุณ
+$liff_register = "https://liff.line.me/2008573640-Z1aN5Eyn"; // แก้เป็น LIFF ID หน้า Register
+$liff_teacher  = "https://liff.line.me/2008573640-qQxJWXLz"; // หน้าจัดการสอน
+$liff_student  = "https://liff.line.me/2008573640-jb4bpE5J"; // หน้าเช็คชื่อ
+$liff_admin    = "https://liff.line.me/2008573640-Xlr1jY4w"; // หน้า Admin Dashboard
 
 $menus = [
     'guest' => [
         'name' => 'Guest Menu',
-        'image' => $imagePathPrefix . 'guest.jpg',
+        'image' => $imagePathPrefix . 'guest.jpg', // ชื่อไฟล์รูปต้องตรงกับที่มีใน assets/images/
         'areas' => [
             [ "bounds"=>["x"=>0,"y"=>0,"width"=>833,"height"=>843], "action"=>["type"=>"message","text"=>"ติดต่อเจ้าหน้าที่"] ],
-            [ "bounds"=>["x"=>833,"y"=>0,"width"=>833,"height"=>843], "action"=>["type"=>"uri","uri"=>"https://liff.line.me/xxxx"] ],
-            [ "bounds"=>["x"=>1666,"y"=>0,"width"=>834,"height"=>843], "action"=>["type"=>"uri","uri"=>"https://liff.line.me/yyyy"] ]
+            [ "bounds"=>["x"=>833,"y"=>0,"width"=>833,"height"=>843], "action"=>["type"=>"uri","uri"=> $liff_register] ],
+            [ "bounds"=>["x"=>1666,"y"=>0,"width"=>834,"height"=>843], "action"=>["type"=>"uri","uri"=> $liff_login] ]
         ]
     ],
     'admin' => [
         'name' => 'Admin Menu',
         'image' => $imagePathPrefix . 'admin.jpg',
         'areas' => [
-            [ "bounds"=>["x"=>0,"y"=>0,"width"=>833,"height"=>843], "action"=>["type"=>"uri","uri"=>"https://liff.line.me/admin"] ],
+            [ "bounds"=>["x"=>0,"y"=>0,"width"=>833,"height"=>843], "action"=>["type"=>"uri","uri"=> $liff_admin] ],
             [ "bounds"=>["x"=>833,"y"=>0,"width"=>833,"height"=>843], "action"=>["type"=>"message","text"=>"เมนูประกาศ"] ],
             [ "bounds"=>["x"=>1666,"y"=>0,"width"=>834,"height"=>843], "action"=>["type"=>"message","text"=>"Admin Tools"] ]
         ]
@@ -32,24 +51,28 @@ $menus = [
         'name' => 'Teacher Menu',
         'image' => $imagePathPrefix . 'teacher.jpg',
         'areas' => [
-            [ "bounds"=>["x"=>0,"y"=>0,"width"=>833,"height"=>843], "action"=>["type"=>"uri","uri"=>"https://liff.line.me/teacher"] ],
-            [ "bounds"=>["x"=>833,"y"=>0,"width"=>1667,"height"=>843], "action"=>["type"=>"uri","uri"=>"https://liff.line.me/teacher2"] ]
+            // ปุ่มซ้าย: ไปหน้าจัดการรายวิชา
+            [ "bounds"=>["x"=>0,"y"=>0,"width"=>833,"height"=>843], "action"=>["type"=>"uri","uri"=> $liff_teacher] ],
+            // ปุ่มขวา (ยาว): ไปหน้าจัดการรายวิชาเหมือนกัน (หรือแยกปุ่มรายงาน)
+            [ "bounds"=>["x"=>833,"y"=>0,"width"=>1667,"height"=>843], "action"=>["type"=>"uri","uri"=> $liff_teacher] ]
         ]
     ],
     'student' => [
         'name' => 'Student Menu',
-        'image' => $imagePathPrefix . 'student.png',
+        'image' => $imagePathPrefix . 'student.jpg', // แก้ชื่อไฟล์เป็น .jpg หรือ .png ตามจริง
         'areas' => [
-            [ "bounds"=>["x"=>0,"y"=>0,"width"=>833,"height"=>843], "action"=>["type"=>"uri","uri"=>"https://liff.line.me/student"] ],
-            [ "bounds"=>["x"=>833,"y"=>0,"width"=>833,"height"=>843], "action"=>["type"=>"uri","uri"=>"https://liff.line.me/student"] ],
+            [ "bounds"=>["x"=>0,"y"=>0,"width"=>833,"height"=>843], "action"=>["type"=>"uri","uri"=> $liff_student] ],
+            [ "bounds"=>["x"=>833,"y"=>0,"width"=>833,"height"=>843], "action"=>["type"=>"uri","uri"=> $liff_student] ],
             [ "bounds"=>["x"=>1666,"y"=>0,"width"=>834,"height"=>843], "action"=>["type"=>"message","text"=>"คู่มือการใช้งาน"] ]
         ]
     ]
 ];
 
-ob_start(); // จับข้อความทั้งหมดเพื่อนำไปใส่ UI
+ob_start(); 
 
-// ลบ Rich Menu เดิม
+// --------------------------------------------------------
+// 3. PROCESS
+// --------------------------------------------------------
 
 echo "STEP 1: ลบเมนูเก่า...\n";
 $allMenus = getRichMenuList($oldToken);
@@ -63,15 +86,14 @@ if (!empty($allMenus['richmenus'])) {
     echo "ℹ ไม่มีข้อมูลเมนูค้างอยู่\n\n";
 }
 
-// สร้างใหม่
 echo "STEP 2: สร้างเมนูใหม่...\n";
 
 $newIds = [];
 
 foreach ($menus as $role => $config) {
-
+    // เช็คว่าไฟล์รูปมีจริงไหม (สำคัญมาก เพราะเปลี่ยน Path แล้ว)
     if (!file_exists($config['image'])) {
-        die("❌ ไม่พบรูปภาพ: " . $config['image']);
+        die("❌ ไม่พบรูปภาพ: " . $config['image'] . " (กรุณาเช็ค Path หรือชื่อไฟล์)");
     }
 
     $jsonBody = json_encode([
@@ -87,6 +109,7 @@ foreach ($menus as $role => $config) {
 
     $ext = pathinfo($config['image'], PATHINFO_EXTENSION);
     $contentType = ($ext == 'png') ? 'image/png' : 'image/jpeg';
+    
     uploadRichMenuImage($oldToken, $richMenuId, $config['image'], $contentType);
 
     $newIds[$role] = $richMenuId;
@@ -94,64 +117,61 @@ foreach ($menus as $role => $config) {
 
     if ($role === "guest") {
         setDefaultRichMenu($oldToken, $richMenuId);
-        echo "ตั้งเป็น Guest แล้ว\n";
+        echo "   -> ตั้งเป็น Default Menu แล้ว\n";
     }
 }
 echo "\n";
 
-// เขียน config ใหม่
+// --------------------------------------------------------
+// 4. UPDATE CONFIG FILE
+// --------------------------------------------------------
+echo "STEP 3: อัปเดตไฟล์ config...\n";
 
-echo "STEP 3: อัปเดต config...\n";
-
-$config = "<?php\n";
-$config .= "define('CHANNEL_ACCESS_TOKEN', '$oldToken');\n";
-$config .= "define('CHANNEL_SECRET', '$oldSecret');\n\n";
+$configContent = "<?php\n";
+$configContent .= "define('CHANNEL_ACCESS_TOKEN', '$oldToken');\n";
+$configContent .= "define('CHANNEL_SECRET', '$oldSecret');\n\n";
 
 foreach ($newIds as $role => $id) {
-    $config .= "define('RICHMENU_" . strtoupper($role) . "', '$id');\n";
+    $configContent .= "define('RICHMENU_" . strtoupper($role) . "', '$id');\n";
 }
-$config .= "?>";
+$configContent .= "?>";
 
-if (@file_put_contents('config/line_config.php', $config)) {
-    echo "อัปเดตไฟล์ config สำเร็จ\n";
+// แก้ไข Path บันทึกไฟล์ (ถอยกลับ 1 ชั้น)
+if (@file_put_contents('../config/line_config.php', $configContent)) {
+    echo "✅ อัปเดตไฟล์ ../config/line_config.php สำเร็จ\n";
 } else {
-    echo "เขียนทับไฟล์ไม่ได้ ดำเนินการแก้ไขไฟล์เอง\n";
-    echo "--------------------------------------------\n";
-    echo $config;
-    echo "--------------------------------------------\n";
+    echo "❌ เขียนไฟล์ config ไม่ได้ (ติด Permission) กรุณาแก้ไขไฟล์ด้วยตัวเอง\n";
 }
 
-$log = nl2br(ob_get_clean()); // แปลง log เป็น HTML
-
-
+$log = nl2br(ob_get_clean());
 ?>
+
 <!DOCTYPE html>
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<title>Auto Update Rich Menu</title>
+<title>System Setup Result</title>
 <style>
 body{font-family:"Prompt",sans-serif;background:#f7f8fc;margin:0;padding:40px;}
 .card{max-width:900px;margin:auto;background:#fff;padding:30px;border-radius:14px;box-shadow:0 4px 14px rgba(0,0,0,.08);}
 h1{color:#3630a3;margin-top:0;}
 pre{background:#272822;color:#f8f8f2;padding:20px;border-radius:8px;overflow:auto;font-size:15px;}
-.btn{display:block;margin:35px auto 0;background:#4b48df;color:#fff;border:none;padding:18px 60px;font-size:22px;border-radius:10px;cursor:pointer;transition:.3s;}
+.btn{display:block;margin:35px auto 0;background:#4b48df;color:#fff;border:none;padding:18px 60px;font-size:18px;border-radius:10px;cursor:pointer;transition:.3s;text-decoration:none;text-align:center;}
 .btn:hover{background:#3b39c8;}
 </style>
 </head>
 <body>
 <div class="card">
-    <h1>Update Rich Menu</h1>
-    <p>สถานะการทำงานของระบบ:</p>
+    <h1>Update Rich Menu Result</h1>
     <pre><?php echo $log; ?></pre>
-    <button class="btn" onclick="location.href='default.php'">ดำเนินการต่อ</button>
+    
+    <a href="default.php" class="btn">ดำเนินการต่อ</a>
 </div>
 </body>
 </html>
 
-
 <?php
-// ฟังก์ชัน
+// --- Functions ---
 function getRichMenuList($token){
     $ch=curl_init("https://api.line.me/v2/bot/richmenu/list");
     curl_setopt_array($ch,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_HTTPHEADER=>["Authorization: Bearer $token"]]);

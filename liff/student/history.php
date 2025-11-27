@@ -1,3 +1,7 @@
+<?php
+require_once '../../config/security.php';
+checkLogin('student'); // บังคับว่าเป็น teacher เท่านั้น
+?>
 <!DOCTYPE html>
 <html lang="th">
 <head>
