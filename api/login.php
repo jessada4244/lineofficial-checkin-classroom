@@ -21,11 +21,8 @@ $stmt->execute([$username, $password]);
 $user = $stmt->fetch();
 
 if ($user) {
-    // 2. อัปเดต Line User ID ของคนนี้ลง Database
-    $update = $pdo->prepare("UPDATE users SET line_user_id = ? WHERE id = ?");
-    $update->execute([$lineUserId, $user['id']]);
-
-    // 3. เลือกเมนูตาม Role
+   
+   
     $richMenuId = RICHMENU_GUEST; // default
     if ($user['role'] == 'admin') $richMenuId = RICHMENU_ADMIN;
     if ($user['role'] == 'teacher') $richMenuId = RICHMENU_TEACHER;

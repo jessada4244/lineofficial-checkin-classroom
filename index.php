@@ -86,12 +86,16 @@ try {
                     </a>
 
                     <div class="grid grid-cols-2 gap-3">
-                        <a href="setup_richmenu.php" target="_blank" class="text-center p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-700 hover:bg-yellow-100 transition">
-                            <span class="block text-sm font-bold">🔄 Setup Menu</span>
-                            <span class="text-[10px]">สร้าง Rich Menu (Dev)</span>
+                        <a href="rich_menu.php" target="_blank" class="text-center p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-700 hover:bg-yellow-100 transition">
+                            <span class="block text-sm font-bold">Create Menu</span>
+                            <span class="text-[10px]">สร้างเมนู</span>
+                        <a href="default.php" target="_blank" class="text-center p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-700 hover:bg-yellow-100 transition">
+                            <span class="block text-sm font-bold">Update Menu</span>
+                            <span class="text-[10px]">อัปเดตเมนูใหม่</span>
                         </a>
                         
                     </div>
+                    
                 </div>
 
             </div>

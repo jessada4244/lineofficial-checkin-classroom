@@ -6,8 +6,7 @@
 // 1. CONFIGURATION (แก้ไขตรงนี้)
 // ==========================================
 
-$accessToken = 'XBHB0gvzj+/rd4xFbdkdkCvifDB/doyl5TVk04bojp2Gffq4EzvYivlTHXqQ4uTbFitI+dN5JfoRa2W7Y2lZKVWoQ4cZxp1WSdXMPLWjE99VWDNawnxLFghlFoAPwFALkMgRZtbZ65oMUmZTJBi6TAdB04t89/1O/w1cDnyilFU=';
-// *** ใส่ LIFF URL ของคุณที่นี่ ***
+$accessToken = "XBHB0gvzj+/rd4xFbdkdkCvifDB/doyl5TVk04bojp2Gffq4EzvYivlTHXqQ4uTbFitI+dN5JfoRa2W7Y2lZKVWoQ4cZxp1WSdXMPLWjE99VWDNawnxLFghlFoAPwFALkMgRZtbZ65oMUmZTJBi6TAdB04t89/1O/w1cDnyilFU=";
 $liff_login   = "https://liff.line.me/2008562649-3z1WPZD2"; 
 $liff_register = "https://liff.line.me/2008573640-Z1aN5Eyn";   // หน้า Login
 $liff_teacher = "https://liff.line.me/2008562649-bkoEQOMg";  // หน้า Manage Class
