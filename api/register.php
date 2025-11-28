@@ -60,7 +60,7 @@ try {
     echo json_encode(['status' => 'error', 'message' => 'Server Error: ' . $e->getMessage()]);
 }
 
-// ฟังก์ชันแจ้งเตือน (Copy มาวาง หรือ Include ไฟล์กลางก็ได้)
+// ฟังก์ชันแจ้งเตือน  
 function notifyAllAdmins($pdo, $text, $token) {
     $stmt = $pdo->query("SELECT line_user_id FROM users WHERE role = 'admin' AND line_user_id IS NOT NULL");
     $admins = $stmt->fetchAll(PDO::FETCH_COLUMN);

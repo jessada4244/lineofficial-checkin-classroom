@@ -82,7 +82,7 @@ try {
     }
 
     // ===========================================================
-    // ACTION: เช็คชื่อด้วย GPS (Check-in)
+    // ACTION: เช็คชื่อด้วย GPS (สำรอง)
     // ===========================================================
     elseif ($action === 'check_in') {
         $classId = $input['class_id'];
@@ -104,7 +104,7 @@ try {
             exit;
         }
 
-        // 2. ตรวจสอบว่าเช็คชื่อวันนี้ไปหรือยัง
+        // 2. ตรวจสอบว่าเช็คชื่อวันนี้ไปหรือยัง (Logic เดิม: วันละครั้ง)
         $today = date('Y-m-d');
         $stmtCheck = $pdo->prepare("SELECT id FROM attendance WHERE student_id = ? AND classroom_id = ? AND DATE(checkin_time) = ?");
         $stmtCheck->execute([$studentUserId, $classId, $today]);
@@ -113,44 +113,94 @@ try {
             exit;
         }
 
-        // 3. คำนวณระยะทาง (Haversine Formula)
-        $earthRadius = 6371000; // รัศมีโลก (เมตร)
-        $latFrom = deg2rad($lat);
-        $lonFrom = deg2rad($lng);
-        $latTo = deg2rad($class['lat']);
-        $lonTo = deg2rad($class['lng']);
+        // 3. คำนวณระยะทาง
+        $earthRadius = 6371000;
+        $latFrom = deg2rad($lat); $lonFrom = deg2rad($lng);
+        $latTo = deg2rad($class['lat']); $lonTo = deg2rad($class['lng']);
+        $latDelta = $latTo - $latFrom; $lonDelta = $lonTo - $lonFrom;
+        $angle = 2 * asin(sqrt(pow(sin($latDelta / 2), 2) + cos($latFrom) * cos($latTo) * pow(sin($lonDelta / 2), 2)));
+        $distance = $earthRadius * $angle;
 
-        $latDelta = $latTo - $latFrom;
-        $lonDelta = $lonTo - $lonFrom;
-
-        $angle = 2 * asin(sqrt(pow(sin($latDelta / 2), 2) +
-            cos($latFrom) * cos($latTo) * pow(sin($lonDelta / 2), 2)));
-        
-        $distance = $earthRadius * $angle; // ระยะห่างเป็นเมตร
-
-        // 4. เงื่อนไขระยะทาง (50 เมตร)
         if ($distance > 50) {
             echo json_encode(['status' => 'error', 'message' => 'อยู่นอกพื้นที่ (ห่าง ' . round($distance) . ' ม.)']);
             exit;
         }
 
-        // 5. เงื่อนไขเวลา (Late Check)
         $status = 'present';
-        if (!empty($class['checkin_limit_time'])) {
-            $currentTime = date('H:i:s');
-            if ($currentTime > $class['checkin_limit_time']) {
-                $status = 'late';
-            }
+        if (!empty($class['checkin_limit_time']) && date('H:i:s') > $class['checkin_limit_time']) {
+            $status = 'late';
         }
 
-        // 6. บันทึกผล
         $sqlInsert = "INSERT INTO attendance (student_id, classroom_id, status, location_lat, location_lng) VALUES (?, ?, ?, ?, ?)";
         $stmtInsert = $pdo->prepare($sqlInsert);
         
         if ($stmtInsert->execute([$studentUserId, $classId, $status, $lat, $lng])) {
+            echo json_encode(['status' => 'success', 'checkin_status' => $status, 'time' => date('H:i'), 'distance' => round($distance)]);
+        }
+    }
+
+    // ===========================================================
+    // ACTION: เช็คชื่อด้วย QR Code (ระบบใหม่: แยกตาม Session)
+    // ===========================================================
+    elseif ($action === 'check_in_qr') {
+        $classId = $input['class_id'];
+        $lat = $input['lat'];
+        $lng = $input['lng'];
+        $qrToken = $input['qr_token']; // รับ Token จากการสแกน
+
+        // 1. ดึงข้อมูลห้องเรียนและ Token ปัจจุบันที่อาจารย์เปิดอยู่
+        $stmtClass = $pdo->prepare("SELECT subject_name, lat, lng, checkin_limit_time, qr_token FROM classrooms WHERE id = ?");
+        $stmtClass->execute([$classId]);
+        $class = $stmtClass->fetch();
+
+        if (!$class) {
+            echo json_encode(['status' => 'error', 'message' => 'ไม่พบข้อมูลวิชา']);
+            exit;
+        }
+
+        // 2. ตรวจสอบ Token (ต้องตรงกับที่อาจารย์เปิดอยู่ตอนนี้เท่านั้น)
+        if ($class['qr_token'] !== $qrToken) {
+            echo json_encode(['status' => 'error', 'message' => 'QR Code หมดอายุ หรือมีการเปิดรอบใหม่ไปแล้ว']);
+            exit;
+        }
+
+        // 3. ตรวจสอบว่าเคยเช็คใน "รอบนี้" ไปหรือยัง (เช็คจาก session_token)
+        // เพื่อให้เช็คได้หลายรอบต่อวัน แต่รอบละ 1 ครั้ง
+        $stmtCheck = $pdo->prepare("SELECT id FROM attendance WHERE student_id = ? AND classroom_id = ? AND session_token = ?");
+        $stmtCheck->execute([$studentUserId, $classId, $qrToken]);
+        if ($stmtCheck->fetch()) {
+            echo json_encode(['status' => 'error', 'message' => 'คุณเช็คชื่อในรอบนี้ไปแล้ว']);
+            exit;
+        }
+
+        // 4. ตรวจสอบ GPS (50 เมตร)
+        $earthRadius = 6371000;
+        $latFrom = deg2rad($lat); $lonFrom = deg2rad($lng);
+        $latTo = deg2rad($class['lat']); $lonTo = deg2rad($class['lng']);
+        $latDelta = $latTo - $latFrom; $lonDelta = $lonTo - $lonFrom;
+        $angle = 2 * asin(sqrt(pow(sin($latDelta / 2), 2) + cos($latFrom) * cos($latTo) * pow(sin($lonDelta / 2), 2)));
+        $distance = $earthRadius * $angle;
+
+        if ($distance > 50) {
+            echo json_encode(['status' => 'error', 'message' => 'QR ถูกต้อง แต่อยู่นอกระยะห้องเรียน (ห่าง ' . round($distance) . ' ม.)']);
+            exit;
+        }
+
+        // 5. สถานะ มา/สาย
+        $status = 'present';
+        if (!empty($class['checkin_limit_time']) && date('H:i:s') > $class['checkin_limit_time']) {
+            $status = 'late';
+        }
+
+        // 6. บันทึกข้อมูล (สำคัญ: บันทึก session_token ลงไปด้วย)
+        $sqlInsert = "INSERT INTO attendance (student_id, classroom_id, status, location_lat, location_lng, session_token) VALUES (?, ?, ?, ?, ?, ?)";
+        $stmtInsert = $pdo->prepare($sqlInsert);
+        
+        if ($stmtInsert->execute([$studentUserId, $classId, $status, $lat, $lng, $qrToken])) {
             echo json_encode([
                 'status' => 'success', 
-                'checkin_status' => $status,
+                'subject_name' => $class['subject_name'],
+                'checkin_status' => ($status=='present'?'มาเรียน':'มาสาย'), // ส่ง text กลับไปโชว์
                 'time' => date('H:i'),
                 'distance' => round($distance)
             ]);

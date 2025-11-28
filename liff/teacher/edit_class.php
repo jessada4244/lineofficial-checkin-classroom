@@ -1,6 +1,6 @@
 <?php
 require_once '../../config/security.php';
-checkLogin('teacher'); // บังคับว่าเป็น teacher เท่านั้น
+checkLogin('teacher'); 
 ?>
 <!DOCTYPE html>
 <html>
@@ -56,8 +56,6 @@ checkLogin('teacher'); // บังคับว่าเป็น teacher เท
         </div>
 
         <div class="px-5 space-y-6">
-            
-
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
                 <h2 class="text-gray-800 font-bold mb-4 flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-500" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" /></svg>
@@ -82,10 +80,9 @@ checkLogin('teacher'); // บังคับว่าเป็น teacher เท
         </div>
         <br>
         <button onclick="startCheckin()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white p-5 rounded-2xl shadow-lg shadow-indigo-200 font-bold flex items-center justify-center gap-3 transform active:scale-95 transition">
-                <span class="text-lg">เริ่มการเช็คชื่อ</span>
-            </button>
+            <span class="text-lg">📷 เปิด QR Code เช็คชื่อ</span>
+        </button>
     </div>
-
 
     <div id="view-settings" class="view-section max-w-md mx-auto min-h-screen bg-gray-50 pb-20 hidden">
         <div class="bg-white p-4 shadow-sm flex items-center gap-3 sticky top-0 z-50">
@@ -94,9 +91,8 @@ checkLogin('teacher'); // บังคับว่าเป็น teacher เท
             </button>
             <h1 class="text-lg font-bold">แก้ไขข้อมูลห้องเรียน</h1>
         </div>
-
         <div class="p-5 space-y-6">
-            <div class="bg-white p-5 rounded-xl shadow-sm">
+             <div class="bg-white p-5 rounded-xl shadow-sm">
                 <h2 class="text-xs font-bold text-gray-400 mb-4 uppercase tracking-wider">ข้อมูลวิชา</h2>
                 <div class="mb-4">
                     <label class="text-xs text-gray-500 mb-1 block">รหัสวิชา</label>
@@ -161,7 +157,6 @@ checkLogin('teacher'); // บังคับว่าเป็น teacher เท
             if(viewName === 'dashboard' && map) setTimeout(() => map.invalidateSize(), 200);
         }
 
-        // ======================= MAP & DATA LOADING =======================
         function initMap(lat, lng) {
             const startLat = lat || 13.7563;
             const startLng = lng || 100.5018;
@@ -242,7 +237,6 @@ checkLogin('teacher'); // บังคับว่าเป็น teacher เท
             });
         }
 
-        // ======================= SAVE & DELETE LOGIC =======================
         async function saveCheckinConfig() {
             const time = document.getElementById('limitTime').value;
             const lat = document.getElementById('current_lat').value;
@@ -263,32 +257,20 @@ checkLogin('teacher'); // บังคับว่าเป็น teacher เท
             loadClassData();
         }
 
-        // *** ฟังก์ชันลบห้องเรียน ***
         async function deleteClass() {
             if (!confirm("⚠️ คำเตือน: คุณต้องการลบห้องเรียนนี้ใช่หรือไม่?\n\nข้อมูลการเช็คชื่อและรายชื่อนิสิตทั้งหมดจะหายไปถาวร!")) return;
-            
-            // Double Check (กันพลาด)
             const confirmName = prompt(`พิมพ์ชื่อวิชา "${classData.subject_name}" เพื่อยืนยันการลบ:`);
             if (confirmName !== classData.subject_name) return alert("ชื่อวิชาไม่ถูกต้อง ยกเลิกการลบ");
-
             try {
                 const profile = await liff.getProfile();
                 const res = await axios.post('../../api/teacher_api.php', {
-                    action: 'delete_class',
-                    line_id: profile.userId,
-                    class_id: CLASS_ID
+                    action: 'delete_class', line_id: profile.userId, class_id: CLASS_ID
                 });
-
                 if (res.data.status === 'success') {
                     alert("🗑️ ลบห้องเรียนเรียบร้อยแล้ว");
-                    // กลับไปหน้ารายการ
                     window.location.href = './manage_class.php';
-                } else {
-                    alert("❌ ลบไม่สำเร็จ: " + res.data.message);
-                }
-            } catch (err) {
-                alert("Server Error");
-            }
+                } else { alert("❌ ลบไม่สำเร็จ: " + res.data.message); }
+            } catch (err) { alert("Server Error"); }
         }
 
         async function updateAPI(dataToUpdate) {
@@ -303,7 +285,6 @@ checkLogin('teacher'); // บังคับว่าเป็น teacher เท
             else alert("บันทึกผิดพลาด: " + res.data.message);
         }
 
-        // ======================= HELPERS =======================
         async function addStudent() {
             const code = document.getElementById('add-studentCode').value;
             if(!code) return;
@@ -345,7 +326,12 @@ checkLogin('teacher'); // บังคับว่าเป็น teacher เท
             const bigint = parseInt(hex.slice(1), 16);
             return [(bigint >> 16) & 255, (bigint >> 8) & 255, bigint & 255].join(", ");
         }
-        function startCheckin() { alert("เริ่มเช็คชื่อ..."); }
+
+        // ======================= แก้ไขปุ่มเริ่มเช็คชื่อ =======================
+        function startCheckin() {
+            // ไปยังหน้าสร้าง QR Code
+            window.location.href = './gen_qr.php?class_id=' + CLASS_ID;
+        }
     </script>
 </body>
 </html>
