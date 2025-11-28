@@ -22,6 +22,7 @@ $imagePathPrefix = '../assets/images/';
 // 2. DEFINE MENUS
 // ==========================================
 // ลิงก์ LIFF ที่ใช้ (ควรแก้ให้ตรงกับของคุณ)
+$liff_contact  = "https://liff.line.me/2008573640-4dv1PmaJ";
 $liff_login    = "https://liff.line.me/2008573640-9pYeN4Dn"; // แก้เป็น LIFF ID หน้า Login ของคุณ
 $liff_register = "https://liff.line.me/2008573640-Z1aN5Eyn"; // แก้เป็น LIFF ID หน้า Register
 $liff_teacher  = "https://liff.line.me/2008573640-qQxJWXLz"; // หน้าจัดการสอน
@@ -33,7 +34,7 @@ $menus = [
         'name' => 'Guest Menu',
         'image' => $imagePathPrefix . 'guest.jpg', // ชื่อไฟล์รูปต้องตรงกับที่มีใน assets/images/
         'areas' => [
-            [ "bounds"=>["x"=>0,"y"=>0,"width"=>833,"height"=>843], "action"=>["type"=>"message","text"=>"ติดต่อเจ้าหน้าที่"] ],
+            [ "bounds"=>["x"=>0,"y"=>0,"width"=>833,"height"=>843], "action"=>["type"=>"uri","uri"=> $liff_contact] ],
             [ "bounds"=>["x"=>833,"y"=>0,"width"=>833,"height"=>843], "action"=>["type"=>"uri","uri"=> $liff_register] ],
             [ "bounds"=>["x"=>1666,"y"=>0,"width"=>834,"height"=>843], "action"=>["type"=>"uri","uri"=> $liff_login] ]
         ]
@@ -51,19 +52,18 @@ $menus = [
         'name' => 'Teacher Menu',
         'image' => $imagePathPrefix . 'teacher.jpg',
         'areas' => [
-            // ปุ่มซ้าย: ไปหน้าจัดการรายวิชา
-            [ "bounds"=>["x"=>0,"y"=>0,"width"=>833,"height"=>843], "action"=>["type"=>"uri","uri"=> $liff_teacher] ],
-            // ปุ่มขวา (ยาว): ไปหน้าจัดการรายวิชาเหมือนกัน (หรือแยกปุ่มรายงาน)
-            [ "bounds"=>["x"=>833,"y"=>0,"width"=>1667,"height"=>843], "action"=>["type"=>"uri","uri"=> $liff_teacher] ]
+            [ "bounds"=>["x"=>0,"y"=>0,"width"=>833,"height"=>843], "action"=>["type"=>"uri","uri"=> $liff_contact] ],
+            [ "bounds"=>["x"=>833,"y"=>0,"width"=>833,"height"=>843], "action"=>["type"=>"uri","uri"=> $liff_teacher] ],
+            [ "bounds"=>["x"=>1666,"y"=>0,"width"=>834,"height"=>843], "action"=>["type"=>"uri","uri"=> $liff_teacher] ]
         ]
     ],
     'student' => [
         'name' => 'Student Menu',
         'image' => $imagePathPrefix . 'student.jpg', // แก้ชื่อไฟล์เป็น .jpg หรือ .png ตามจริง
         'areas' => [
-            [ "bounds"=>["x"=>0,"y"=>0,"width"=>833,"height"=>843], "action"=>["type"=>"uri","uri"=> $liff_student] ],
+            [ "bounds"=>["x"=>0,"y"=>0,"width"=>833,"height"=>843], "action"=>["type"=>"uri","uri"=> $liff_contact] ],
             [ "bounds"=>["x"=>833,"y"=>0,"width"=>833,"height"=>843], "action"=>["type"=>"uri","uri"=> $liff_student] ],
-            [ "bounds"=>["x"=>1666,"y"=>0,"width"=>834,"height"=>843], "action"=>["type"=>"message","text"=>"คู่มือการใช้งาน"] ]
+            [ "bounds"=>["x"=>1666,"y"=>0,"width"=>834,"height"=>843], "action"=>["type"=>"uri","uri"=> $liff_student] ]
         ]
     ]
 ];
