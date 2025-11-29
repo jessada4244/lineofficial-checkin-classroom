@@ -52,10 +52,6 @@ checkLogin('student');
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
                     สแกน QR Code
                 </button>
-
-                <button id="btnCheckin" onclick="doCheckin()" disabled class="w-full bg-gray-100 text-gray-400 py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2">
-                    <span>📍 เช็คชื่อด้วย GPS เท่านั้น</span>
-                </button>
             </div>
             
         </div>
@@ -86,18 +82,36 @@ checkLogin('student');
             userLng = pos.coords.longitude;
             document.getElementById('loading').classList.add('hidden');
             document.getElementById('content').classList.remove('hidden');
-            
-            const btn = document.getElementById('btnCheckin');
-            btn.disabled = false;
-            btn.classList.remove('bg-gray-100', 'text-gray-400');
-            btn.classList.add('bg-white', 'text-gray-600', 'border', 'border-gray-200', 'hover:bg-gray-50');
-
             initMap(userLat, userLng);
         }
 
         function onLocationError(err) {
-            document.getElementById('loading').innerHTML = `<p class="text-red-500 font-bold p-10 text-center">ไม่สามารถระบุตำแหน่ง GPS ได้</p>`;
-        }
+    let msg = "";
+    switch(err.code) {
+        case err.PERMISSION_DENIED:
+            msg = "❌ คุณปฏิเสธการเข้าถึงตำแหน่ง หรือไม่ได้เปิด HTTPS<br>กรุณาอนุญาตสิทธิ์ หรือเปิด Location";
+            break;
+        case err.POSITION_UNAVAILABLE:
+            msg = "❌ ไม่สามารถระบุตำแหน่งได้ (สัญญาณ GPS อ่อน)";
+            break;
+        case err.TIMEOUT:
+            msg = "❌ หมดเวลาในการค้นหาตำแหน่ง (ลองกดใหม่อีกครั้ง)";
+            break;
+        default:
+            msg = "❌ เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ (" + err.message + ")";
+            break;
+    }
+
+    // แสดง Error ที่ชัดเจน
+    document.getElementById('loading').innerHTML = `
+        <div class="text-red-500 font-bold p-6 text-center">
+            <div class="text-4xl mb-2">⚠️</div>
+            ${msg}
+            <br><br>
+            <button onclick="location.reload()" class="bg-gray-800 text-white px-6 py-2 rounded-lg">ลองใหม่</button>
+        </div>
+    `;
+}
 
         function initMap(lat, lng) {
             map = L.map('map', { zoomControl: false, dragging: false, scrollWheelZoom: false }).setView([lat, lng], 17);
@@ -126,29 +140,12 @@ checkLogin('student');
             try {
                 const profile = await liff.getProfile();
                 const res = await axios.post('../../api/student_api.php', {
-                    action: 'check_in_qr', // Action สำหรับ QR
+                    action: 'check_in_qr', // เรียก Action QR
                     line_id: profile.userId,
                     class_id: CLASS_ID,
                     lat: userLat,
                     lng: userLng,
                     qr_token: qrToken
-                });
-                if (res.data.status === 'success') showResult('success', res.data.checkin_status, res.data.distance, res.data.time);
-                else showResult('error', res.data.message);
-            } catch (err) { showResult('error', "Server Error"); }
-            setLoading(false);
-        }
-
-        async function doCheckin() {
-            setLoading(true);
-            try {
-                const profile = await liff.getProfile();
-                const res = await axios.post('../../api/student_api.php', {
-                    action: 'check_in', // Action เดิม (GPS)
-                    line_id: profile.userId,
-                    class_id: CLASS_ID,
-                    lat: userLat,
-                    lng: userLng
                 });
                 if (res.data.status === 'success') showResult('success', res.data.checkin_status, res.data.distance, res.data.time);
                 else showResult('error', res.data.message);
@@ -182,10 +179,9 @@ checkLogin('student');
                 box.className = "mb-6 p-6 rounded-2xl bg-red-50 border border-red-200 text-center";
                 icon.innerText = "❌"; title.innerText = "เช็คชื่อไม่สำเร็จ"; title.className = "font-bold text-xl text-red-700";
                 desc.innerText = status; 
-                document.getElementById('actionButtons').classList.remove('hidden'); // ให้กดใหม่ได้
+                document.getElementById('actionButtons').classList.remove('hidden');
                 document.getElementById('actionButtons').innerHTML = `
-                    <button onclick="scanQR()" class="w-full bg-blue-600 text-white py-3 rounded-xl mb-2">ลองสแกนใหม่</button>
-                    <button onclick="doCheckin()" class="w-full bg-gray-200 text-gray-600 py-3 rounded-xl">ลอง GPS ใหม่</button>`;
+                    <button onclick="scanQR()" class="w-full bg-blue-600 text-white py-3 rounded-xl mb-2">ลองสแกนใหม่</button>`;
             }
         }
     </script>
