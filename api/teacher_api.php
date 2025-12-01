@@ -9,6 +9,7 @@ error_reporting(E_ALL);
 
 header('Content-Type: application/json');
 require_once '../config/db.php';
+require_once '../config/line_config.php'; // จำเป็นต้องใช้ Token ในการส่งไลน์ Broadcast
 
 $input = json_decode(file_get_contents('php://input'), true);
 $action = $input['action'] ?? '';
@@ -23,18 +24,18 @@ if (!$teacher) { echo json_encode(['status' => 'error', 'message' => 'Unauthoriz
 $teacherId = $teacher['id'];
 
 try {
-    // -----------------------------------------------------------------
-    // กลุ่ม Action เดิม (จัดการห้องเรียน)
-    // -----------------------------------------------------------------
+    // =================================================================
+    // GROUP 1: จัดการห้องเรียน (CRUD)
+    // =================================================================
 
-    // ดึงรายวิชา
+    // ดึงรายวิชาทั้งหมดของครู
     if ($action === 'get_classes') {
         $stmt = $pdo->prepare("SELECT * FROM classrooms WHERE teacher_id = ? ORDER BY id DESC");
         $stmt->execute([$teacherId]);
         echo json_encode(['status' => 'success', 'classes' => $stmt->fetchAll()]);
     }
 
-    // สร้างวิชา
+    // สร้างวิชาใหม่
     elseif ($action === 'create_class') {
         $name = $input['name'];
         $courseCode = $input['course_code']; 
@@ -55,7 +56,7 @@ try {
         }
     }
 
-    // ดึงรายละเอียดวิชา
+    // ดึงรายละเอียดวิชา (เพื่อไปแสดงในหน้า Edit)
     elseif ($action === 'get_class_details') {
         $classId = $input['class_id'];
         $stmt = $pdo->prepare("SELECT * FROM classrooms WHERE id = ? AND teacher_id = ?");
@@ -69,23 +70,22 @@ try {
         echo json_encode(['status' => 'success', 'class' => $class]);
     }
 
-    // อัปเดตวิชา
+    // อัปเดตข้อมูลวิชา (รวมถึงลิงก์ Zoom/Teams)
     elseif ($action === 'update_class') {
         $classId = $input['class_id'];
-        $name = $input['name'] ?? null;
-        $courseCode = $input['course_code'] ?? null;
-        $roomColor = $input['color'] ?? null;
-        $time = $input['time'] ?? null; 
-        $lat = $input['lat'] ?? null;
-        $lng = $input['lng'] ?? null;
-
+        
         $sqlParts = []; $params = [];
-        if ($name !== null) { $sqlParts[] = "subject_name = ?"; $params[] = $name; }
-        if ($courseCode !== null) { $sqlParts[] = "course_code = ?"; $params[] = $courseCode; }
-        if ($roomColor !== null) { $sqlParts[] = "room_color = ?"; $params[] = $roomColor; }
-        if ($time !== null) { $sqlParts[] = "checkin_limit_time = ?"; $params[] = $time; }
-        if ($lat !== null) { $sqlParts[] = "lat = ?"; $params[] = ($lat === '' ? NULL : $lat); }
-        if ($lng !== null) { $sqlParts[] = "lng = ?"; $params[] = ($lng === '' ? NULL : $lng); }
+
+        if (isset($input['name'])) { $sqlParts[] = "subject_name = ?"; $params[] = $input['name']; }
+        if (isset($input['course_code'])) { $sqlParts[] = "course_code = ?"; $params[] = $input['course_code']; }
+        if (isset($input['color'])) { $sqlParts[] = "room_color = ?"; $params[] = $input['color']; }
+        if (isset($input['time'])) { $sqlParts[] = "checkin_limit_time = ?"; $params[] = $input['time']; }
+        if (isset($input['lat'])) { $sqlParts[] = "lat = ?"; $params[] = ($input['lat']===''?NULL:$input['lat']); }
+        if (isset($input['lng'])) { $sqlParts[] = "lng = ?"; $params[] = ($input['lng']===''?NULL:$input['lng']); }
+        
+        // อัปเดตลิงก์ถาวร
+        if (isset($input['zoom_link'])) { $sqlParts[] = "zoom_link = ?"; $params[] = $input['zoom_link']; }
+        if (isset($input['teams_link'])) { $sqlParts[] = "teams_link = ?"; $params[] = $input['teams_link']; }
 
         if (empty($sqlParts)) { echo json_encode(['status' => 'success', 'message' => 'Nothing to update']); exit; }
 
@@ -97,7 +97,7 @@ try {
         else throw new Exception("Update Failed");
     }
 
-    // เพิ่ม/ลบ นิสิตในห้อง
+    // เพิ่มสมาชิก (นิสิต) เข้าห้อง
     elseif ($action === 'add_member') {
         $studentCode = $input['student_code'];
         $classId = $input['class_id'];
@@ -111,13 +111,15 @@ try {
             echo json_encode(['status' => 'success']);
         } catch (\PDOException $e) { echo json_encode(['status' => 'error', 'message' => 'มีนิสิตคนนี้แล้ว']); }
     }
+    
+    // ลบสมาชิกออกจากห้อง
     elseif ($action === 'remove_member') {
         $stmt = $pdo->prepare("DELETE FROM classroom_members WHERE classroom_id = ? AND student_id = ?");
         $stmt->execute([$input['class_id'], $input['student_id_to_remove']]);
         echo json_encode(['status' => 'success']);
     }
 
-    // ลบห้องเรียน
+    // ลบห้องเรียนถาวร
     elseif ($action === 'delete_class') {
         $classId = $input['class_id'];
         try {
@@ -134,53 +136,79 @@ try {
         } catch (Exception $e) { $pdo->rollBack(); throw $e; }
     }
 
-    // -----------------------------------------------------------------
-    // กลุ่ม Action ใหม่ (ระบบ QR Code & Live Session)
-    // -----------------------------------------------------------------
+    // =================================================================
+    // GROUP 2: ระบบเช็คชื่อ (QR Code & Live Session)
+    // =================================================================
 
-    // 1. เริ่มต้น Session ใหม่ (เปิดหน้าจอ QR)
+    // 1. เริ่มต้น Session ใหม่
     elseif ($action === 'start_new_session') {
         $classId = $input['class_id'];
-        
-        // สร้าง Session ID ใหม่ (SESS_timestamp_random)
+        $mode = $input['mode'] ?? 'onsite'; 
+        $notify = $input['notify'] ?? false; // รับค่า checkbox ว่าจะส่งไลน์ไหม
+
         $sessionId = uniqid('SESS_');
-        // สร้าง QR Token แรก
         $qrToken = bin2hex(random_bytes(8));
+        $isOnline = ($mode !== 'onsite') ? 1 : 0;
+        
+        // 1. ดึงข้อมูลวิชา และ ลิงก์ที่บันทึกไว้ใน DB
+        $stmtInfo = $pdo->prepare("SELECT subject_name, checkin_limit_time, zoom_link, teams_link FROM classrooms WHERE id = ?");
+        $stmtInfo->execute([$classId]);
+        $classInfo = $stmtInfo->fetch();
+        $subjectName = $classInfo['subject_name'];
 
-        // อัปเดตลงตาราง classrooms
-        $stmt = $pdo->prepare("UPDATE classrooms SET current_session_id = ?, qr_token = ? WHERE id = ? AND teacher_id = ?");
-        $stmt->execute([$sessionId, $qrToken, $classId, $teacherId]);
+        // 2. เลือก Link ตามโหมดที่ส่งมา
+        $meetingLink = null;
+        if ($mode === 'zoom') {
+            $meetingLink = $classInfo['zoom_link'];
+        } elseif ($mode === 'teams') {
+            $meetingLink = $classInfo['teams_link'];
+        }
 
-        // ดึงข้อมูลเวลา Limit เพื่อไปนับถอยหลัง
-        $stmt2 = $pdo->prepare("SELECT subject_name, checkin_limit_time FROM classrooms WHERE id = ?");
-        $stmt2->execute([$classId]);
-        $classInfo = $stmt2->fetch();
+        // 3. อัปเดต Database (บันทึก Session ใหม่ + Link ที่ใช้ในรอบนี้)
+        $stmt = $pdo->prepare("UPDATE classrooms SET current_session_id = ?, qr_token = ?, is_online_session = ?, session_link = ? WHERE id = ? AND teacher_id = ?");
+        $stmt->execute([$sessionId, $qrToken, $isOnline, $meetingLink, $classId, $teacherId]);
+
+        // 4. ส่ง Broadcast แจ้งเตือนนิสิต (เฉพาะ Online + มี Link + ติ๊กเลือกส่ง)
+        if ($isOnline && !empty($meetingLink) && $notify) {
+            $sqlStudents = "SELECT u.line_user_id FROM classroom_members cm JOIN users u ON cm.student_id = u.id WHERE cm.classroom_id = ? AND u.line_user_id IS NOT NULL";
+            $stmtStd = $pdo->prepare($sqlStudents);
+            $stmtStd->execute([$classId]);
+            $studentLineIds = $stmtStd->fetchAll(PDO::FETCH_COLUMN);
+
+            if (!empty($studentLineIds)) {
+                $platformName = ($mode === 'zoom') ? "Zoom" : "MS Teams";
+                $msgText = "🔔 เริ่มคลาสแล้ว: $subjectName\n";
+                $msgText .= "เข้าเรียนผ่าน $platformName ได้ที่นี่ 👇\n";
+                $msgText .= $meetingLink;
+                
+                // ส่งทีละ 150 คน (ข้อจำกัด LINE Multicast)
+                foreach (array_chunk($studentLineIds, 150) as $chunk) {
+                    sendLineMulticast($chunk, $msgText, CHANNEL_ACCESS_TOKEN);
+                }
+            }
+        }
 
         echo json_encode([
             'status' => 'success',
             'session_id' => $sessionId,
             'qr_token' => $qrToken,
-            'subject_name' => $classInfo['subject_name'],
+            'subject_name' => $subjectName,
             'limit_time' => $classInfo['checkin_limit_time'],
+            'meeting_link' => $meetingLink, // ส่งกลับไปให้หน้าจออาจารย์เปิดปุ่ม Host
             'server_time' => date('H:i:s')
         ]);
     }
 
-    // 2. หมุน QR Code (เปลี่ยนทุก 5 วินาที)
+    // 2. หมุน QR Code (เปลี่ยน Token ทุก 5 วินาที)
     elseif ($action === 'rotate_qr_token') {
         $classId = $input['class_id'];
-        
-        // สร้าง Token ใหม่
         $newToken = bin2hex(random_bytes(8));
-
-        // อัปเดตเฉพาะ qr_token (session_id เดิมยังคงอยู่)
         $stmt = $pdo->prepare("UPDATE classrooms SET qr_token = ? WHERE id = ? AND teacher_id = ?");
         $stmt->execute([$newToken, $classId, $teacherId]);
-
         echo json_encode(['status' => 'success', 'new_qr_token' => $newToken]);
     }
 
-    // 3. ดึงสถานะสด (Live Status)
+    // 3. ดึงสถานะสด (Live Status) ว่าใครมาแล้วบ้าง
     elseif ($action === 'get_live_status') {
         $classId = $input['class_id'];
         
@@ -189,25 +217,18 @@ try {
         $stmtC->execute([$classId]);
         $currSession = $stmtC->fetchColumn();
 
-        // ดึงนักเรียนทั้งหมดในห้อง
-        $sqlStd = "SELECT u.id, u.student_id, u.name 
-                   FROM classroom_members cm 
-                   JOIN users u ON cm.student_id = u.id 
-                   WHERE cm.classroom_id = ? 
-                   ORDER BY u.student_id ASC";
+        // ดึงนักเรียนทั้งหมด
+        $sqlStd = "SELECT u.id, u.student_id, u.name FROM classroom_members cm JOIN users u ON cm.student_id = u.id WHERE cm.classroom_id = ? ORDER BY u.student_id ASC";
         $stmtStd = $pdo->prepare($sqlStd); 
-        $stmtStd->execute([$classId]);
+        $stmtStd->execute([$classId]); 
         $allStudents = $stmtStd->fetchAll();
 
-        // ดึงคนที่เช็คชื่อแล้ว (เฉพาะใน Session ปัจจุบัน)
-        $sqlAtt = "SELECT student_id, status, checkin_time 
-                   FROM attendance 
-                   WHERE classroom_id = ? AND session_token = ?";
+        // ดึงคนที่เช็คชื่อแล้วใน Session นี้
+        $sqlAtt = "SELECT student_id, status, checkin_time FROM attendance WHERE classroom_id = ? AND session_token = ?";
         $stmtAtt = $pdo->prepare($sqlAtt); 
-        $stmtAtt->execute([$classId, $currSession]);
+        $stmtAtt->execute([$classId, $currSession]); 
         $attendees = $stmtAtt->fetchAll();
         
-        // Map ข้อมูลเพื่อแยกกลุ่ม
         $attMap = [];
         foreach($attendees as $a) { $attMap[$a['student_id']] = $a; }
 
@@ -239,17 +260,12 @@ try {
         ]);
     }
 
-    // 4. ดึงรายการรอบการเช็คชื่อย้อนหลัง (Sessions List)
+    // 4. ดึงรายการรอบการเช็คชื่อย้อนหลัง (History List)
     elseif ($action === 'get_checkin_sessions') {
         $classId = $input['class_id'];
-        
-        $sql = "SELECT session_token, MIN(checkin_time) as first_checkin 
-                FROM attendance 
-                WHERE classroom_id = ? AND session_token IS NOT NULL 
-                GROUP BY session_token 
-                ORDER BY first_checkin DESC";
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([$classId]);
+        $sql = "SELECT session_token, MIN(checkin_time) as first_checkin FROM attendance WHERE classroom_id = ? AND session_token IS NOT NULL GROUP BY session_token ORDER BY first_checkin DESC";
+        $stmt = $pdo->prepare($sql); 
+        $stmt->execute([$classId]); 
         $rounds = $stmt->fetchAll();
 
         $sessionList = [];
@@ -261,9 +277,8 @@ try {
                 'time' => $dt->format('H:i')
             ];
         }
-
-        $stmtName = $pdo->prepare("SELECT subject_name FROM classrooms WHERE id = ?");
-        $stmtName->execute([$classId]);
+        $stmtName = $pdo->prepare("SELECT subject_name FROM classrooms WHERE id = ?"); 
+        $stmtName->execute([$classId]); 
         $sub = $stmtName->fetchColumn();
 
         echo json_encode(['status' => 'success', 'subject_name' => $sub, 'sessions' => $sessionList]);
@@ -275,10 +290,14 @@ try {
         $token = $input['session_token'];
 
         $sqlStd = "SELECT u.id, u.student_id, u.name FROM classroom_members cm JOIN users u ON cm.student_id = u.id WHERE cm.classroom_id = ? ORDER BY u.student_id ASC";
-        $stmtStd = $pdo->prepare($sqlStd); $stmtStd->execute([$classId]); $allStudents = $stmtStd->fetchAll();
+        $stmtStd = $pdo->prepare($sqlStd); 
+        $stmtStd->execute([$classId]); 
+        $allStudents = $stmtStd->fetchAll();
 
         $sqlAtt = "SELECT student_id, status, checkin_time FROM attendance WHERE classroom_id = ? AND session_token = ?";
-        $stmtAtt = $pdo->prepare($sqlAtt); $stmtAtt->execute([$classId, $token]); $attendees = $stmtAtt->fetchAll();
+        $stmtAtt = $pdo->prepare($sqlAtt); 
+        $stmtAtt->execute([$classId, $token]); 
+        $attendees = $stmtAtt->fetchAll();
         
         $attMap = [];
         foreach($attendees as $a) { $attMap[$a['student_id']] = $a; }
@@ -303,5 +322,31 @@ try {
 
 } catch (Exception $e) {
     echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+}
+
+// =================================================================
+// HELPER FUNCTIONS
+// =================================================================
+
+function sendLineMulticast($userIds, $text, $token) {
+    $url = "https://api.line.me/v2/bot/message/multicast";
+    $body = json_encode([
+        "to" => $userIds,
+        "messages" => [[ "type" => "text", "text" => $text ]]
+    ]);
+    
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => $body,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_HTTPHEADER => [
+            "Content-Type: application/json",
+            "Authorization: Bearer $token"
+        ],
+        CURLOPT_SSL_VERIFYPEER => false
+    ]);
+    curl_exec($ch);
+    curl_close($ch);
 }
 ?>
