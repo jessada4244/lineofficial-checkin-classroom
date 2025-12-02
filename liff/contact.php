@@ -1,4 +1,3 @@
-
 <?php 
 // ไม่ต้อง require security.php หรือ checkLogin() เพราะหน้านี้เปิดสาธารณะ
 // แต่ถ้าอยากใช้ session ก็ใส่แค่ session_start(); ได้
