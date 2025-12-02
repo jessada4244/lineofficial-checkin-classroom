@@ -72,7 +72,7 @@ checkLogin('student');
     
     <button onclick="document.getElementById('joinModal').classList.remove('hidden')" class="fixed bottom-6 right-6 bg-gray-800 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-3xl font-bold hover:bg-black transition transform hover:scale-110 active:scale-95 z-20">+</button>
 
-    <?php include '../../assets/components/settings_modal.html'; ?>
+
     <script>
         const LIFF_ID = "2008573640-jb4bpE5J"; 
         let userLat = 0, userLng = 0;
@@ -114,6 +114,6 @@ checkLogin('student');
         function goToHistory(id) { window.location.href = './history.php?class_id=' + id; }
         function isDarkColor(hex) { if(!hex)return false; const r=parseInt(hex.substr(1,2),16),g=parseInt(hex.substr(3,2),16),b=parseInt(hex.substr(5,2),16); return (0.2126*r+0.7152*g+0.0722*b)<128; }
     </script>
-    <script src="../../assets/js/user_settings.js"></script>
+   
 </body>
 </html>

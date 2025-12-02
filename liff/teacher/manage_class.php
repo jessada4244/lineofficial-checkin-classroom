@@ -62,7 +62,7 @@ checkLogin('teacher');
         </div>
     </div>
 
-    <?php include '../../assets/components/settings_modal.html'; ?>
+    
     <script>
         const LIFF_ID = "2008573640-qQxJWXLz"; 
         const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4'];
@@ -135,7 +135,6 @@ checkLogin('teacher');
         function goToEditClass(id) { window.location.href = './edit_class.php?class_id=' + id; }
         function goToReport(id) { window.location.href = './checkin_report.php?class_id=' + id; }
     </script>
-    
-    <script src="../../assets/js/user_settings.js"></script>
+  
 </body>
 </html>
