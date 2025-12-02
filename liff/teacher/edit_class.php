@@ -262,12 +262,13 @@ checkLogin('teacher');
         }
 
         function renderMemberList() {
-            const list = document.getElementById('studentList');
-            list.innerHTML = '';
-            classData.members.forEach(m => {
-                list.innerHTML += `<div class="flex justify-between items-center bg-gray-50 p-2 rounded mb-1 border"><span class="text-sm">${m.name} (${m.student_id})</span><button onclick="removeStudent('${m.student_id}', ${m.id})" class="text-red-500 text-xs">ลบ</button></div>`;
-            });
-        }
+    const list = document.getElementById('studentList');
+    list.innerHTML = '';
+    classData.members.forEach(m => {
+        // แก้ตรงนี้: ใช้ m.edu_id แทน m.student_id
+        list.innerHTML += `<div class="flex justify-between items-center bg-gray-50 p-2 rounded mb-1 border"><span class="text-sm">${m.name} (${m.edu_id})</span><button onclick="removeStudent('${m.edu_id}', ${m.id})" class="text-red-500 text-xs">ลบ</button></div>`;
+    });
+}
 
         // --- Save Functions ---
         async function saveCheckinConfig(silent = false) {

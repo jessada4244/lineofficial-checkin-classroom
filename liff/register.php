@@ -112,57 +112,74 @@
         main();
 
         function toggleStudentId() {
-            const role = document.querySelector('input[name="role"]:checked').value;
-            const container = document.getElementById('studentIdContainer');
-            if (role === 'student') container.classList.remove('hidden');
-            else container.classList.add('hidden');
-        }
+    const role = document.querySelector('input[name="role"]:checked').value;
+    const container = document.getElementById('studentIdContainer');
+    const label = container.querySelector('label');
+    const input = document.getElementById('studentId');
 
-        async function handleRegister(e) {
-            e.preventDefault();
-            
-            const name = document.getElementById('name').value;
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            const role = document.querySelector('input[name="role"]:checked').value;
-            const studentId = document.getElementById('studentId').value;
+    // ไม่ว่าจะเลือก Student หรือ Teacher ก็ให้โชว์ช่องกรอก ID
+    container.classList.remove('hidden');
+    
+    if (role === 'student') {
+        label.innerText = "รหัสนิสิต";
+        input.placeholder = "เช่น 6601xxxx";
+    } else {
+        label.innerText = "รหัสอาจารย์";
+        input.placeholder = "เช่น T-001";
+    }
+}
+        
+        
+       async function handleRegister(e) {
+    e.preventDefault();
+    
+    const name = document.getElementById('name').value;
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    const role = document.querySelector('input[name="role"]:checked').value;
+    
+    // จุดที่ 1: ดึงค่าจากช่อง input (id="studentId")
+    const eduId = document.getElementById('studentId').value; 
 
-            if (role === 'student' && !studentId) return showAlert('error', 'กรุณากรอกรหัสนิสิต');
-            if (!lineUserId) return showAlert('error', 'ไม่สามารถดึงข้อมูล LINE ได้ กรุณาลองใหม่');
+    // Validation ฝั่งหน้าเว็บ
+    if (!eduId) return showAlert('error', 'กรุณากรอกรหัสประจำตัว');
+    if (!lineUserId) return showAlert('error', 'ไม่พบข้อมูล LINE (LIFF Error)');
 
-            const btn = document.getElementById('btnReg');
-            btn.disabled = true;
-            btn.innerText = "กำลังบันทึก...";
+    const btn = document.getElementById('btnReg');
+    btn.disabled = true;
+    btn.innerText = "กำลังบันทึก...";
 
-            try {
-                // ส่ง line_user_id ไปด้วย
-                const res = await axios.post('../api/register.php', {
-                    name, username, password, role, 
-                    student_id: studentId,
-                    line_user_id: lineUserId // <-- ส่งไปตรงนี้
-                });
+    try {
+        // จุดที่ 2: ส่งข้อมูลไปที่ API (สำคัญมาก! ต้องส่งเป็น edu_id)
+        const res = await axios.post('../api/register.php', {
+            name: name,
+            username: username,
+            password: password,
+            role: role,
+            edu_id: eduId,       // <--- ต้องใช้ชื่อ edu_id ให้ตรงกับ API
+            line_user_id: lineUserId 
+        });
 
-                if (res.data.status === 'success') {
-                    showAlert('success', 'สมัครสมาชิกสำเร็จ!');
-                    setTimeout(() => {
-                        // สมัครเสร็จแล้ว ปิดหน้าต่างเลยก็ได้ หรือเด้งไปหน้า Login
-                        if (liff.isInClient()) {
-                            liff.closeWindow();
-                        } else {
-                            window.location.href = './login.php';
-                        }
-                    }, 1500);
+        if (res.data.status === 'success') {
+            showAlert('success', 'สมัครสมาชิกสำเร็จ!');
+            setTimeout(() => {
+                if (liff.isInClient()) {
+                    liff.closeWindow();
                 } else {
-                    showAlert('error', res.data.message);
-                    btn.disabled = false;
-                    btn.innerText = "ยืนยันการสมัคร";
+                    window.location.href = './login.php';
                 }
-            } catch (err) {
-                showAlert('error', 'Server Error');
-                btn.disabled = false;
-                btn.innerText = "ยืนยันการสมัคร";
-            }
+            }, 1500);
+        } else {
+            showAlert('error', res.data.message);
+            btn.disabled = false;
+            btn.innerText = "ยืนยันการสมัคร";
         }
+    } catch (err) {
+        showAlert('error', 'Server Error: ' + err.message);
+        btn.disabled = false;
+        btn.innerText = "ยืนยันการสมัคร";
+    }
+}
 
         function showAlert(type, msg) {
             const box = document.getElementById('alertBox');

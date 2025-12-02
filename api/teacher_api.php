@@ -20,16 +20,12 @@ if (!$teacher) { echo json_encode(['status' => 'error', 'message' => 'Unauthoriz
 $teacherId = $teacher['id'];
 
 try {
-    // ... (ส่วนจัดการห้องเรียน get_classes, create_class, update_class ฯลฯ ใช้โค้ดเดิม) ...
-    // ผมจะโฟกัสที่ส่วน start_new_session และ rotate_qr_token ที่ต้องแก้
-
     if ($action === 'get_classes') {
         $stmt = $pdo->prepare("SELECT * FROM classrooms WHERE teacher_id = ? ORDER BY id DESC");
         $stmt->execute([$teacherId]);
         echo json_encode(['status' => 'success', 'classes' => $stmt->fetchAll()]);
     }
     elseif ($action === 'create_class') {
-        // ... (โค้ดเดิม) ...
         $name = $input['name']; $courseCode = $input['course_code']; 
         $color = $input['color'] ?? '#FFFFFF'; $limit = 40; $classCode = rand(100000, 999999); 
         $sql = "INSERT INTO classrooms (teacher_id, subject_name, course_code, class_code, room_color, student_limit) VALUES (?, ?, ?, ?, ?, ?)";
@@ -38,19 +34,20 @@ try {
         else throw new Exception("Save Failed");
     }
     elseif ($action === 'get_class_details') {
-        // ... (โค้ดเดิม) ...
         $classId = $input['class_id'];
         $stmt = $pdo->prepare("SELECT * FROM classrooms WHERE id = ? AND teacher_id = ?");
         $stmt->execute([$classId, $teacherId]);
         $class = $stmt->fetch();
         if (!$class) { echo json_encode(['status' => 'error', 'message' => 'Not Found']); exit; }
-        $stmtMembers = $pdo->prepare("SELECT u.id, u.student_id, u.name FROM classroom_members cm JOIN users u ON cm.student_id = u.id WHERE cm.classroom_id = ?");
+        
+        // ** แก้ไข: ดึง edu_id แทน student_id **
+        $stmtMembers = $pdo->prepare("SELECT u.id, u.edu_id, u.name FROM classroom_members cm JOIN users u ON cm.student_id = u.id WHERE cm.classroom_id = ?");
         $stmtMembers->execute([$classId]);
         $class['members'] = $stmtMembers->fetchAll();
+        
         echo json_encode(['status' => 'success', 'class' => $class]);
     }
     elseif ($action === 'update_class') {
-        // ... (โค้ดเดิม) ...
         $classId = $input['class_id'];
         $sqlParts = []; $params = [];
         if (isset($input['name'])) { $sqlParts[] = "subject_name = ?"; $params[] = $input['name']; }
@@ -69,12 +66,19 @@ try {
         else throw new Exception("Update Failed");
     }
     elseif ($action === 'add_member') {
-        // ... (โค้ดเดิม) ...
-        $studentCode = $input['student_code']; $classId = $input['class_id'];
-        $stmtUser = $pdo->prepare("SELECT id FROM users WHERE student_id = ? AND role = 'student'");
-        $stmtUser->execute([$studentCode]); $student = $stmtUser->fetch();
-        if (!$student) { echo json_encode(['status' => 'error', 'message' => 'ไม่พบรหัสนิสิต']); exit; }
-        try { $pdo->prepare("INSERT INTO classroom_members (classroom_id, student_id) VALUES (?, ?)")->execute([$classId, $student['id']]); echo json_encode(['status' => 'success']); } 
+        $eduId = $input['student_code']; // รับรหัสที่กรอกเข้ามา (ซึ่งตอนนี้คือ edu_id)
+        $classId = $input['class_id'];
+        
+        // ** แก้ไข: ค้นหาด้วย edu_id **
+        $stmtUser = $pdo->prepare("SELECT id FROM users WHERE edu_id = ? AND role = 'student'");
+        $stmtUser->execute([$eduId]); 
+        $student = $stmtUser->fetch();
+        
+        if (!$student) { echo json_encode(['status' => 'error', 'message' => 'ไม่พบรหัสนิสิตนี้ในระบบ']); exit; }
+        try { 
+            $pdo->prepare("INSERT INTO classroom_members (classroom_id, student_id) VALUES (?, ?)")->execute([$classId, $student['id']]); 
+            echo json_encode(['status' => 'success']); 
+        } 
         catch (\PDOException $e) { echo json_encode(['status' => 'error', 'message' => 'มีนิสิตคนนี้แล้ว']); }
     }
     elseif ($action === 'remove_member') {
@@ -82,7 +86,6 @@ try {
         echo json_encode(['status' => 'success']);
     }
     elseif ($action === 'delete_class') {
-        // ... (โค้ดเดิม) ...
         $classId = $input['class_id'];
         $pdo->beginTransaction();
         $pdo->prepare("DELETE FROM classroom_members WHERE classroom_id = ?")->execute([$classId]);
@@ -90,34 +93,25 @@ try {
         $pdo->prepare("DELETE FROM classrooms WHERE id = ? AND teacher_id = ?")->execute([$classId, $teacherId]);
         $pdo->commit(); echo json_encode(['status' => 'success']);
     }
-
-    // --- ส่วนที่แก้ไข: Start Session ---
     elseif ($action === 'start_new_session') {
         $classId = $input['class_id'];
         $mode = $input['mode'] ?? 'onsite'; 
         $notify = $input['notify'] ?? false; 
         $newTime = $input['time'] ?? null;
         $customLink = $input['link'] ?? '';
-
         $sessionId = uniqid('SESS_');
-        
-        // **แก้ตรงนี้: เปลี่ยน Token เป็นตัวเลข 6 หลัก**
         $qrToken = str_pad(rand(0, 9999), 4, '0', STR_PAD_LEFT); 
-
         $isOnline = ($mode !== 'onsite') ? 1 : 0;
         
         $stmtInfo = $pdo->prepare("SELECT subject_name FROM classrooms WHERE id = ?");
         $stmtInfo->execute([$classId]);
         $subjectName = $stmtInfo->fetchColumn();
-
         $meetingLink = $customLink;
 
-        // อัปเดตข้อมูลลง DB
         $sql = "UPDATE classrooms SET current_session_id = ?, qr_token = ?, is_online_session = ?, session_link = ?, checkin_limit_time = ? WHERE id = ? AND teacher_id = ?";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([$sessionId, $qrToken, $isOnline, $meetingLink, $newTime, $classId, $teacherId]);
 
-        // ส่ง Broadcast
         if ($isOnline && !empty($meetingLink) && $notify) {
             $sqlStudents = "SELECT u.line_user_id FROM classroom_members cm JOIN users u ON cm.student_id = u.id WHERE cm.classroom_id = ? AND u.line_user_id IS NOT NULL";
             $stmtStd = $pdo->prepare($sqlStudents);
@@ -126,54 +120,40 @@ try {
 
             if (!empty($studentLineIds)) {
                 $platformName = ($mode === 'zoom') ? "Zooms" : "Microsoft Teams";
-                $msgText = "สามารถเข้าร่วมห้องเรียนออนไลน์: $subjectName\n";
-                // $msgText .= "รหัสเช็คชื่อ: $qrToken\n"; // ส่งรหัสไปในไลน์ด้วย
-                $msgText .= "เข้าเรียนผ่าน $platformName ตาม Link ดังนี้ 👇\n$meetingLink";
-                
+                $msgText = "สามารถเข้าร่วมห้องเรียนออนไลน์: $subjectName\nเข้าเรียนผ่าน $platformName ตาม Link ดังนี้ 👇\n$meetingLink";
                 foreach (array_chunk($studentLineIds, 150) as $chunk) {
                     sendLineMulticast($chunk, $msgText, CHANNEL_ACCESS_TOKEN);
                 }
             }
         }
-
-        echo json_encode([
-            'status' => 'success',
-            'session_id' => $sessionId,
-            'qr_token' => $qrToken,
-            'subject_name' => $subjectName,
-            'limit_time' => $newTime,
-            'meeting_link' => $meetingLink
-        ]);
+        echo json_encode(['status' => 'success', 'session_id' => $sessionId, 'qr_token' => $qrToken, 'subject_name' => $subjectName, 'limit_time' => $newTime, 'meeting_link' => $meetingLink]);
     }
-
-    // --- ส่วนที่แก้ไข: Rotate QR ---
     elseif ($action === 'rotate_qr_token') {
         $classId = $input['class_id'];
-        // **แก้ตรงนี้: เปลี่ยน Token เป็นตัวเลข 6 หลัก**
         $newToken = str_pad(rand(0, 9999), 4, '0', STR_PAD_LEFT);
-        
         $stmt = $pdo->prepare("UPDATE classrooms SET qr_token = ? WHERE id = ? AND teacher_id = ?");
         $stmt->execute([$newToken, $classId, $teacherId]);
         echo json_encode(['status' => 'success', 'new_qr_token' => $newToken]);
     }
-
     elseif ($action === 'get_live_status') {
-        // ... (โค้ดเดิม) ...
         $classId = $input['class_id'];
         $stmtC = $pdo->prepare("SELECT current_session_id FROM classrooms WHERE id = ?"); $stmtC->execute([$classId]); $currSession = $stmtC->fetchColumn();
-        $stmtStd = $pdo->prepare("SELECT u.id, u.student_id, u.name FROM classroom_members cm JOIN users u ON cm.student_id = u.id WHERE cm.classroom_id = ? ORDER BY u.student_id ASC"); $stmtStd->execute([$classId]); $allStudents = $stmtStd->fetchAll();
+        
+        // ** แก้ไข: ดึง edu_id **
+        $stmtStd = $pdo->prepare("SELECT u.id, u.edu_id, u.name FROM classroom_members cm JOIN users u ON cm.student_id = u.id WHERE cm.classroom_id = ? ORDER BY u.edu_id ASC"); 
+        $stmtStd->execute([$classId]); $allStudents = $stmtStd->fetchAll();
+        
         $stmtAtt = $pdo->prepare("SELECT student_id, status, checkin_time FROM attendance WHERE classroom_id = ? AND session_token = ?"); $stmtAtt->execute([$classId, $currSession]); $attendees = $stmtAtt->fetchAll();
         $attMap = []; foreach($attendees as $a) { $attMap[$a['student_id']] = $a; }
         $checked_in = []; $not_checked_in = [];
         foreach($allStudents as $std) {
-            if (isset($attMap[$std['id']])) { $checked_in[] = ['name' => $std['name'], 'student_id' => $std['student_id'], 'status' => $attMap[$std['id']]['status'], 'time' => date('H:i:s', strtotime($attMap[$std['id']]['checkin_time']))]; } 
-            else { $not_checked_in[] = ['name' => $std['name'], 'student_id' => $std['student_id']]; }
+            // ใช้ edu_id ในการส่งกลับไปแสดงผล
+            if (isset($attMap[$std['id']])) { $checked_in[] = ['name' => $std['name'], 'student_id' => $std['edu_id'], 'status' => $attMap[$std['id']]['status'], 'time' => date('H:i:s', strtotime($attMap[$std['id']]['checkin_time']))]; } 
+            else { $not_checked_in[] = ['name' => $std['name'], 'student_id' => $std['edu_id']]; }
         }
         echo json_encode(['status' => 'success', 'checked_in' => $checked_in, 'not_checked_in' => $not_checked_in, 'count_in' => count($checked_in), 'count_not' => count($not_checked_in)]);
     }
-
     elseif ($action === 'get_checkin_sessions') {
-        // ... (โค้ดเดิม) ...
         $classId = $input['class_id'];
         $stmt = $pdo->prepare("SELECT session_token, MIN(checkin_time) as first_checkin FROM attendance WHERE classroom_id = ? AND session_token IS NOT NULL GROUP BY session_token ORDER BY first_checkin DESC"); $stmt->execute([$classId]); $rounds = $stmt->fetchAll();
         $sessionList = []; foreach($rounds as $r) { $dt = new DateTime($r['first_checkin']); $sessionList[] = ['session_token' => $r['session_token'], 'date' => $dt->format('d/m/Y'), 'time' => $dt->format('H:i')]; }
@@ -181,9 +161,12 @@ try {
         echo json_encode(['status' => 'success', 'subject_name' => $sub, 'sessions' => $sessionList]);
     }
     elseif ($action === 'get_session_report') {
-        // ... (โค้ดเดิม) ...
         $classId = $input['class_id']; $token = $input['session_token'];
-        $stmtStd = $pdo->prepare("SELECT u.id, u.student_id, u.name FROM classroom_members cm JOIN users u ON cm.student_id = u.id WHERE cm.classroom_id = ? ORDER BY u.student_id ASC"); $stmtStd->execute([$classId]); $allStudents = $stmtStd->fetchAll();
+        
+        // ** แก้ไข: ดึง edu_id **
+        $stmtStd = $pdo->prepare("SELECT u.id, u.edu_id, u.name FROM classroom_members cm JOIN users u ON cm.student_id = u.id WHERE cm.classroom_id = ? ORDER BY u.edu_id ASC"); 
+        $stmtStd->execute([$classId]); $allStudents = $stmtStd->fetchAll();
+        
         $stmtAtt = $pdo->prepare("SELECT student_id, status, checkin_time FROM attendance WHERE classroom_id = ? AND session_token = ?"); $stmtAtt->execute([$classId, $token]); $attendees = $stmtAtt->fetchAll();
         $attMap = []; foreach($attendees as $a) { $attMap[$a['student_id']] = $a; }
         $report = []; $summary = ['present'=>0, 'late'=>0, 'absent'=>0];
@@ -191,7 +174,7 @@ try {
             $sid = $std['id']; $status = 'absent'; $time = '-';
             if(isset($attMap[$sid])) { $status = $attMap[$sid]['status']; $time = date('H:i', strtotime($attMap[$sid]['checkin_time'])); }
             if(isset($summary[$status])) $summary[$status]++;
-            $report[] = ['name' => $std['name'], 'student_id' => $std['student_id'], 'status' => $status, 'checkin_time' => $time];
+            $report[] = ['name' => $std['name'], 'student_id' => $std['edu_id'], 'status' => $status, 'checkin_time' => $time];
         }
         echo json_encode(['status'=>'success', 'summary'=>$summary, 'report'=>$report]);
     }
@@ -199,7 +182,6 @@ try {
 } catch (Exception $e) {
     echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
 }
-
 function sendLineMulticast($userIds, $text, $token) {
     $ch = curl_init("https://api.line.me/v2/bot/message/multicast");
     curl_setopt_array($ch, [CURLOPT_POST=>true, CURLOPT_POSTFIELDS=>json_encode(["to"=>$userIds,"messages"=>[["type"=>"text","text"=>$text]]]), CURLOPT_RETURNTRANSFER=>true, CURLOPT_HTTPHEADER=>["Content-Type: application/json","Authorization: Bearer $token"], CURLOPT_SSL_VERIFYPEER=>false]);

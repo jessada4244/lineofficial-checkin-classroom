@@ -22,11 +22,11 @@ checkLogin('student');
         </div>
         
         <button onclick="window.location.href='../settings.php'" class="bg-white p-2 rounded-full shadow-sm text-gray-600 hover:text-blue-600 transition">
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-    </svg>
-</button>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+        </button>
     </div>
 
     <div class="p-4 bg-white mb-2 shadow-sm pb-6 rounded-b-3xl space-y-3">
@@ -74,45 +74,181 @@ checkLogin('student');
 
 
     <script>
+        // *** ตรวจสอบ LIFF ID ให้ตรงกับที่สร้างใน LINE Developers สำหรับหน้านี้ ***
         const LIFF_ID = "2008573640-jb4bpE5J"; 
+        
         let userLat = 0, userLng = 0;
         let myClasses = [];
 
         async function main() {
             try {
+                // เริ่มต้น LIFF
                 await liff.init({ liffId: LIFF_ID });
-                if (!liff.isLoggedIn()) liff.login();
-                else {
+                
+                // ตรวจสอบสถานะ Login
+                if (!liff.isLoggedIn()) {
+                    liff.login();
+                } else {
                     const profile = await liff.getProfile();
                     document.getElementById('studentName').innerText = "สวัสดี, " + profile.displayName;
                     loadMyClasses();
                     initGPS();
                 }
-            } catch (err) { alert("LIFF Init Failed"); }
+            } catch (err) { 
+                // แสดง Error อย่างละเอียดเพื่อช่วย Debug
+                alert("LIFF Init Failed:\n" + err.message + "\n(Code: " + err.code + ")"); 
+                console.error(err);
+            }
         }
         main();
 
-        // (คงฟังก์ชันเดิมทั้งหมดไว้: initGPS, loadMyClasses, scanQR, submitCheckin, etc.)
-        function initGPS() { if (navigator.geolocation) { navigator.geolocation.watchPosition((pos) => { userLat = pos.coords.latitude; userLng = pos.coords.longitude; document.getElementById('gpsStatus').innerHTML = `<span class="text-green-600">✅ GPS พร้อมใช้งาน</span>`; }, (err) => { document.getElementById('gpsStatus').innerHTML = `<span class="text-red-500">❌ ไม่พบตำแหน่ง GPS</span>`; }, { enableHighAccuracy: true }); } }
+        function initGPS() { 
+            if (navigator.geolocation) { 
+                navigator.geolocation.watchPosition(
+                    (pos) => { 
+                        userLat = pos.coords.latitude; 
+                        userLng = pos.coords.longitude; 
+                        document.getElementById('gpsStatus').innerHTML = `<span class="text-green-600">✅ GPS พร้อมใช้งาน</span>`; 
+                    }, 
+                    (err) => { 
+                        document.getElementById('gpsStatus').innerHTML = `<span class="text-red-500">❌ ไม่พบตำแหน่ง GPS (เปิด Location หรือยัง?)</span>`; 
+                    }, 
+                    { enableHighAccuracy: true }
+                ); 
+            } else {
+                document.getElementById('gpsStatus').innerText = "❌ อุปกรณ์ไม่รองรับ GPS";
+            }
+        }
+
         async function loadMyClasses() {
             try {
                 const pf = await liff.getProfile();
                 const res = await axios.post('../../api/student_api.php', { action: 'get_my_classes', line_id: pf.userId });
-                const list = document.getElementById('classList'); list.innerHTML = ''; myClasses = res.data.classes;
-                if (res.data.classes.length === 0) { list.innerHTML = `<p class="text-center text-gray-400 mt-10">ยังไม่มีรายวิชา</p>`; return; }
+                const list = document.getElementById('classList'); 
+                list.innerHTML = ''; 
+                myClasses = res.data.classes;
+                
+                if (res.data.classes.length === 0) { 
+                    list.innerHTML = `<p class="text-center text-gray-400 mt-10">ยังไม่มีรายวิชา</p>`; 
+                    return; 
+                }
+                
                 res.data.classes.forEach(c => {
                     const isDark = isDarkColor(c.room_color);
-                    list.innerHTML += `<div onclick="goToHistory(${c.id})" class="p-4 rounded-2xl shadow-md mb-4 cursor-pointer relative overflow-hidden" style="background-color: ${c.room_color};"><h3 class="text-xl font-bold ${isDark?'text-white':'text-gray-800'}">${c.subject_name}</h3><p class="text-sm ${isDark?'text-white/80':'text-gray-500'}">${c.course_code} | อ.${c.teacher_name}</p></div>`;
+                    // ใช้ c.id (classrooms.id) เพื่อไปยังหน้า History
+                    list.innerHTML += `
+                        <div onclick="goToHistory(${c.id})" class="p-4 rounded-2xl shadow-md mb-4 cursor-pointer relative overflow-hidden transform transition hover:scale-[1.02]" style="background-color: ${c.room_color};">
+                            <h3 class="text-xl font-bold ${isDark?'text-white':'text-gray-800'}">${c.subject_name}</h3>
+                            <p class="text-sm ${isDark?'text-white/80':'text-gray-500'}">${c.course_code} | อ.${c.teacher_name}</p>
+                        </div>`;
                 });
-            } catch (e) {}
+            } catch (e) { 
+                console.error(e);
+                document.getElementById('classList').innerHTML = `<p class="text-center text-red-400 mt-10">โหลดข้อมูลไม่สำเร็จ</p>`;
+            }
         }
-        async function scanQR() { if (!userLat) return alert("❌ รอ GPS สักครู่"); if (!liff.isInClient()) return alert("ใช้ใน LINE เท่านั้น"); try { const result = await liff.scanCodeV2(); if (result.value) { const data = JSON.parse(result.value); submitCheckin(data.class_id, data.token, 'scan'); } } catch (err) { alert("เปิดกล้องไม่ได้"); } }
-        function openManualCheckin() { const s = document.getElementById('selectClassCheckin'); s.innerHTML='<option value="">-- เลือกวิชา --</option>'; myClasses.forEach(c=>{s.innerHTML+=`<option value="${c.id}">${c.course_code}</option>`;}); document.getElementById('checkinModal').classList.remove('hidden'); }
-        async function submitManualCheckin() { const cid=document.getElementById('selectClassCheckin').value; const t=document.getElementById('inputCheckinToken').value; if(!cid||!t)return; submitCheckin(cid,t,'manual'); document.getElementById('checkinModal').classList.add('hidden'); }
-        async function submitCheckin(classId, token, type) { try { const pf=await liff.getProfile(); const res=await axios.post('../../api/student_api.php',{action:'check_in_qr',line_id:pf.userId,class_id:classId,qr_token:token,submission_type:type,lat:userLat,lng:userLng}); if(res.data.status==='success') alert(`✅ เช็คชื่อสำเร็จ!\nวิชา: ${res.data.subject_name}\nสถานะ: ${res.data.checkin_status}\nระยะ: ${res.data.distance}`); else alert("❌ "+res.data.message); } catch(err){alert("Error");} }
-        async function joinClass() { const c=document.getElementById('inputClassCode').value; if(!c)return; try{const pf=await liff.getProfile(); const r=await axios.post('../../api/student_api.php',{action:'join_class',line_id:pf.userId,class_code:c}); if(r.data.status==='success'){alert("สำเร็จ");loadMyClasses();document.getElementById('joinModal').classList.add('hidden');}else alert(r.data.message);}catch(e){} }
-        function goToHistory(id) { window.location.href = './history.php?class_id=' + id; }
-        function isDarkColor(hex) { if(!hex)return false; const r=parseInt(hex.substr(1,2),16),g=parseInt(hex.substr(3,2),16),b=parseInt(hex.substr(5,2),16); return (0.2126*r+0.7152*g+0.0722*b)<128; }
+
+        async function scanQR() { 
+            if (!userLat) return alert("❌ รอ GPS สักครู่... (ตรวจสอบว่าเปิด Location แล้ว)"); 
+            if (!liff.isInClient()) return alert("ฟังก์ชันสแกนใช้ได้เฉพาะบนแอป LINE ในมือถือเท่านั้น"); 
+            
+            try { 
+                const result = await liff.scanCodeV2(); 
+                if (result.value) { 
+                    try {
+                        const data = JSON.parse(result.value);
+                        if(data.class_id && data.token) {
+                            submitCheckin(data.class_id, data.token, 'scan'); 
+                        } else {
+                            alert("❌ QR Code ไม่ถูกต้อง (ไม่ใช่ของระบบนี้)");
+                        }
+                    } catch(e) {
+                        alert("❌ รูปแบบข้อมูล QR Code ไม่ถูกต้อง");
+                    }
+                } 
+            } catch (err) { 
+                alert("เปิดกล้องไม่ได้: " + err.message); 
+            } 
+        }
+
+        function openManualCheckin() { 
+            const s = document.getElementById('selectClassCheckin'); 
+            s.innerHTML='<option value="">-- เลือกวิชา --</option>'; 
+            myClasses.forEach(c=>{
+                s.innerHTML+=`<option value="${c.id}">${c.course_code} ${c.subject_name}</option>`;
+            }); 
+            document.getElementById('checkinModal').classList.remove('hidden'); 
+        }
+
+        async function submitManualCheckin() { 
+            const cid = document.getElementById('selectClassCheckin').value; 
+            const t = document.getElementById('inputCheckinToken').value; 
+            if(!cid || !t) return alert("กรุณากรอกข้อมูลให้ครบ"); 
+            
+            submitCheckin(cid, t, 'manual'); 
+            document.getElementById('checkinModal').classList.add('hidden'); 
+        }
+
+        async function submitCheckin(classId, token, type) { 
+            try { 
+                const pf = await liff.getProfile(); 
+                const res = await axios.post('../../api/student_api.php', {
+                    action: 'check_in_qr',
+                    line_id: pf.userId,
+                    class_id: classId,
+                    qr_token: token,
+                    submission_type: type,
+                    lat: userLat,
+                    lng: userLng
+                }); 
+                
+                if(res.data.status === 'success') {
+                    alert(`✅ เช็คชื่อสำเร็จ!\n----------------\nวิชา: ${res.data.subject_name}\nสถานะ: ${res.data.checkin_status}\nเวลา: ${res.data.time}\nระยะทาง: ${res.data.distance}`); 
+                } else {
+                    alert("❌ " + res.data.message); 
+                }
+            } catch(err) {
+                alert("Server Error: เชื่อมต่อ API ไม่ได้");
+            } 
+        }
+
+        async function joinClass() { 
+            const c = document.getElementById('inputClassCode').value; 
+            if(!c) return alert("กรุณากรอกรหัสวิชา"); 
+            
+            try {
+                const pf = await liff.getProfile(); 
+                const r = await axios.post('../../api/student_api.php', {
+                    action: 'join_class',
+                    line_id: pf.userId,
+                    class_code: c
+                }); 
+                
+                if(r.data.status === 'success') {
+                    alert("✅ เข้าร่วมวิชา '" + r.data.subject_name + "' สำเร็จ!");
+                    loadMyClasses();
+                    document.getElementById('joinModal').classList.add('hidden');
+                    document.getElementById('inputClassCode').value = '';
+                } else {
+                    alert("❌ " + r.data.message);
+                }
+            } catch(e) {
+                alert("Server Error");
+            } 
+        }
+
+        function goToHistory(id) { 
+            window.location.href = './history.php?class_id=' + id; 
+        }
+
+        function isDarkColor(hex) { 
+            if(!hex) return false; 
+            const r = parseInt(hex.substr(1,2),16);
+            const g = parseInt(hex.substr(3,2),16);
+            const b = parseInt(hex.substr(5,2),16); 
+            // สูตรคำนวณความสว่าง (Luma)
+            return (0.2126*r + 0.7152*g + 0.0722*b) < 128; 
+        }
     </script>
    
 </body>
