@@ -2,8 +2,8 @@
 define('CHANNEL_ACCESS_TOKEN', '2EbVZWi+qmRauXJo+JTrgQvHB9Eb9RMlxpn1tdDXacYlS863BtEyPr4Xi9I9B96AFitI+dN5JfoRa2W7Y2lZKVWoQ4cZxp1WSdXMPLWjE9+0SpnaGsAxTcDvZZ4Ss+BunY+FrDeFcLtE0MR1dg13cwdB04t89/1O/w1cDnyilFU=');
 define('CHANNEL_SECRET', '6f983ed7c7f2228d031bdb2fe34cca26');
 
-define('RICHMENU_GUEST', 'richmenu-cc8debd67ea6149b40874f1bdce021dc');
-define('RICHMENU_ADMIN', 'richmenu-4c373176501c235df1fab32131690290');
-define('RICHMENU_TEACHER', 'richmenu-a582a9cd12f7510865f8b510910dbf00');
-define('RICHMENU_STUDENT', 'richmenu-6f3f58b34eb207de9540e8c419beed90');
+define('RICHMENU_GUEST', 'richmenu-64a687b63582613bb889c5261dc41470');
+define('RICHMENU_ADMIN', 'richmenu-488650cf35ee83eb8ad589aeaf33d316');
+define('RICHMENU_TEACHER', 'richmenu-fc866e4426cd89a7f0115a45b3cc4184');
+define('RICHMENU_STUDENT', 'richmenu-bb6f96ace3c8c950958478fe1b7d9434');
 ?>

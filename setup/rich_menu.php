@@ -22,12 +22,14 @@ $imagePathPrefix = '../assets/images/';
 // 2. DEFINE MENUS
 // ==========================================
 // ลิงก์ LIFF ที่ใช้ (ควรแก้ให้ตรงกับของคุณ)
+$liff_contact_admin  = "https://liff.line.me/2008573640-4dv1PmaJ";
 $liff_contact  = "https://liff.line.me/2008573640-4dv1PmaJ";
 $liff_login    = "https://liff.line.me/2008573640-9pYeN4Dn"; // แก้เป็น LIFF ID หน้า Login ของคุณ
 $liff_register = "https://liff.line.me/2008573640-Z1aN5Eyn"; // แก้เป็น LIFF ID หน้า Register
 $liff_teacher  = "https://liff.line.me/2008573640-qQxJWXLz"; // หน้าจัดการสอน
 $liff_student  = "https://liff.line.me/2008573640-jb4bpE5J"; // หน้าเช็คชื่อ
 $liff_admin    = "https://liff.line.me/2008573640-Xlr1jY4w"; // หน้า Admin Dashboard
+
 
 $menus = [
     'guest' => [
@@ -43,17 +45,17 @@ $menus = [
         'name' => 'Admin Menu',
         'image' => $imagePathPrefix . 'admin.jpg',
         'areas' => [
-            [ "bounds"=>["x"=>0,"y"=>0,"width"=>833,"height"=>843], "action"=>["type"=>"uri","uri"=> $liff_admin] ],
-            [ "bounds"=>["x"=>833,"y"=>0,"width"=>833,"height"=>843], "action"=>["type"=>"message","text"=>"เมนูประกาศ"] ],
-            [ "bounds"=>["x"=>1666,"y"=>0,"width"=>834,"height"=>843], "action"=>["type"=>"message","text"=>"Admin Tools"] ]
+            // [ "bounds"=>["x"=>0,"y"=>0,"width"=>833,"height"=>843], "action"=>["type"=>"uri","uri"=> $liff_admin] ],
+            [ "bounds"=>["x"=>833,"y"=>0,"width"=>833,"height"=>843], "action"=>["type"=>"uri","uri"=> $liff_admin] ],
+            [ "bounds"=>["x"=>1666,"y"=>0,"width"=>834,"height"=>843], "action"=>["type"=>"uri","uri"=> $liff_admin] ]
         ]
     ],
     'teacher' => [
         'name' => 'Teacher Menu',
         'image' => $imagePathPrefix . 'teacher.jpg',
         'areas' => [
-            [ "bounds"=>["x"=>0,"y"=>0,"width"=>833,"height"=>843], "action"=>["type"=>"uri","uri"=> $liff_contact] ],
-            [ "bounds"=>["x"=>833,"y"=>0,"width"=>833,"height"=>843], "action"=>["type"=>"uri","uri"=> $liff_teacher] ],
+            // [ "bounds"=>["x"=>0,"y"=>0,"width"=>833,"height"=>843], "action"=>["type"=>"uri","uri"=> $liff_contact] ],
+            [ "bounds"=>["x"=>833,"y"=>0,"width"=>833,"height"=>843], "action"=>["type"=>"uri","uri"=> $liff_contact] ],
             [ "bounds"=>["x"=>1666,"y"=>0,"width"=>834,"height"=>843], "action"=>["type"=>"uri","uri"=> $liff_teacher] ]
         ]
     ],
@@ -61,8 +63,8 @@ $menus = [
         'name' => 'Student Menu',
         'image' => $imagePathPrefix . 'student.jpg', // แก้ชื่อไฟล์เป็น .jpg หรือ .png ตามจริง
         'areas' => [
-            [ "bounds"=>["x"=>0,"y"=>0,"width"=>833,"height"=>843], "action"=>["type"=>"uri","uri"=> $liff_contact] ],
-            [ "bounds"=>["x"=>833,"y"=>0,"width"=>833,"height"=>843], "action"=>["type"=>"uri","uri"=> $liff_student] ],
+            // [ "bounds"=>["x"=>0,"y"=>0,"width"=>833,"height"=>843], "action"=>["type"=>"uri","uri"=> $liff_contact] ],
+            [ "bounds"=>["x"=>833,"y"=>0,"width"=>833,"height"=>843], "action"=>["type"=>"uri","uri"=> $liff_contact] ],
             [ "bounds"=>["x"=>1666,"y"=>0,"width"=>834,"height"=>843], "action"=>["type"=>"uri","uri"=> $liff_student] ]
         ]
     ]

@@ -195,7 +195,8 @@
                         </div>
                         <p class="text-sm text-gray-800 mb-2">${r.message}</p>
                         <div class="flex justify-between items-center border-t pt-2 mt-2">
-                            <div class="text-xs text-gray-500">จาก: <span class="font-bold">${r.sender_name}</span> (${r.sender_role})</div>
+                            <div class="text-xs text-gray-500">จาก: <span class="font-bold">${r.sender_name}</span> (${r.sender_role})</div><br>
+                            <div class="text-xs text-gray-500">เบอร์ติดต่อ: <span class="font-bold">${r.phone}</span> </div>
                             ${!isRep ? `<button onclick="openReply(${r.id}, '${r.sender_line_id}', '${r.sender_name}')" class="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-full shadow hover:bg-blue-700">ตอบกลับ</button>` : '<span class="text-xs text-green-600 font-bold">✓ ตอบแล้ว</span>'}
                         </div>
                     </div>`;

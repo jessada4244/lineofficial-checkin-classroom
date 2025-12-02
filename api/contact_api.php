@@ -12,6 +12,7 @@ if ($action === 'send_report') {
     $displayName = $input['display_name']; // รับชื่อโปรไฟล์ LINE
     $topic = $input['topic'];
     $msg = $input['message'];
+    $ph = $input['phone'];
 
     if(empty($msg)) { echo json_encode(['status'=>'error','message'=>'ข้อความว่างเปล่า']); exit; }
 
@@ -24,16 +25,17 @@ if ($action === 'send_report') {
     $senderName = $user ? $user['name'] . " (" . $user['role'] . ")" : $displayName . " (Guest)";
 
     // 2. บันทึกลง Database
-    $sql = "INSERT INTO reports (user_id, sender_name, line_user_id, topic, message) VALUES (?, ?, ?, ?, ?)";
+    $sql = "INSERT INTO reports (user_id, sender_name, line_user_id, topic, message, phone) VALUES (?, ?, ?, ?, ?, ?)";
     $stmtInsert = $pdo->prepare($sql);
     
-    if($stmtInsert->execute([$userId, $displayName, $lineId, $topic, $msg])) {
+    if($stmtInsert->execute([$userId, $displayName, $lineId, $topic, $msg, $ph])) {
         
         // 3. แจ้งเตือนแอดมิน (Notify Admin)
         $notifyMsg = "📢 มีเรื่องร้องเรียนใหม่!\n\n";
         $notifyMsg .= "👤 จาก: $senderName\n";
         $notifyMsg .= "📌 หัวข้อ: $topic\n";
         $notifyMsg .= "💬 ข้อความ: $msg";
+        $notifyMsg .= "💬 เบอร์โทร: $ph";
         
         notifyAllAdmins($pdo, $notifyMsg, CHANNEL_ACCESS_TOKEN);
 

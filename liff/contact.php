@@ -41,6 +41,10 @@ session_start();
                 <label class="block text-sm font-bold text-gray-700 mb-1">ข้อความ</label>
                 <textarea id="message" rows="5" class="w-full border rounded-lg p-3 bg-gray-50 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="รายละเอียด..."></textarea>
             </div>
+            <div>
+                <label class="block text-sm font-bold text-gray-700 mb-1">เบอร์โทร</label>
+                <input  type= "tel" id="phone" maxlength="10" rows="5" class="w-full border rounded-lg p-3 bg-gray-50 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="รายละเอียด..."></input>
+            </div>
             <button onclick="sendReport()" id="btnSend" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-blue-700 transition transform active:scale-95">ส่งข้อความ</button>
         </div>
     </div>
@@ -77,6 +81,7 @@ session_start();
             
             const topic = document.getElementById('topic').value;
             const msg = document.getElementById('message').value;
+            const ph = document.getElementById('phone').value;
             
             if(!msg) return alert("กรุณาพิมพ์ข้อความที่ต้องการส่ง");
 
@@ -92,7 +97,8 @@ session_start();
                     line_id: userProfile.userId, 
                     display_name: userProfile.displayName, // ส่งชื่อ Guest ไปด้วย
                     topic: topic, 
-                    message: msg
+                    message: msg,
+                    phone: ph
                 });
 
                 if(res.data.status === 'success') {
