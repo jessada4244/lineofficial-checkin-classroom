@@ -1,4 +1,9 @@
 <?php
+// เพิ่ม Header บังคับไม่ให้ Browser จำ Cache หน้าเว็บ (แก้ปัญหา Back แล้ว Error)
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Cache-Control: post-check=0, pre-check=0", false);
+header("Pragma: no-cache");
+
 require_once '../../config/security.php';
 checkLogin('student');
 ?>
@@ -12,8 +17,17 @@ checkLogin('student');
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <style>@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap'); body { font-family: 'Sarabun', sans-serif; }</style>
+    
+    <script>
+        window.onpageshow = function(event) {
+            // ถ้า Browser บอกว่าหน้านี้ถูกโหลดมาจาก Cache (ย้อนกลับมา) ให้สั่ง Reload ใหม่ทันที
+            if (event.persisted) {
+                window.location.reload();
+            }
+        };
+    </script>
 </head>
-<body class="bg-gray-100 min-h-screen pb-24">
+<body class="bg-gray-100 min-h-screen pb-80"> 
 
     <div class="bg-white p-4 shadow-sm sticky top-0 z-10 flex justify-between items-center">
         <div>
@@ -21,36 +35,53 @@ checkLogin('student');
             <p class="text-xs text-gray-500" id="studentName">กำลังโหลด...</p>
         </div>
         
-        <button onclick="window.location.href='../settings.php'" class="bg-white p-2 rounded-full shadow-sm text-gray-600 hover:text-blue-600 transition">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-        </button>
+        <div class="flex gap-3">
+            <button onclick="window.location.reload()" class="text-gray-400 hover:text-blue-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+            </button>
+            <button onclick="window.location.href='../settings.php'" class="text-gray-400 hover:text-blue-600">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+            </button>
+        </div>
     </div>
 
     <div class="p-4 bg-white mb-2 shadow-sm pb-6 rounded-b-3xl space-y-3">
-        <button onclick="scanQR()" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-xl shadow-lg flex items-center justify-center gap-2">
-            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
-            <span class="font-bold">สแกน QR (GPS)</span>
+        <button onclick="document.getElementById('joinModal').classList.remove('hidden')" 
+                class="w-full bg-gray-900 hover:bg-black text-white py-3.5 rounded-xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 transition transform active:scale-95">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            เข้าร่วมห้องเรียนใหม่
         </button>
-        <button onclick="openManualCheckin()" class="w-full bg-white border-2 border-indigo-100 text-indigo-600 py-3 rounded-xl hover:bg-indigo-50 transition flex items-center justify-center gap-2">
-            <span class="font-bold">กรอกรหัสเช็คชื่อ (ออนไลน์)</span>
-        </button>
-        <p id="gpsStatus" class="text-center text-xs text-gray-400 mt-1">📍 กำลังค้นหาพิกัด GPS...</p>
     </div>
 
-    <div id="classList" class="px-4 space-y-4 pb-20">
+    <div class="text-xl font-bold px-4 pt-2 text-gray-800">รายการวิชา</div>
+    <div id="classList" class="px-4 space-y-4 pt-4">
         <div class="text-center mt-10 text-gray-400">กำลังโหลดรายวิชา...</div>
+    </div>
+
+    <div class="fixed bottom-0 left-0 w-full bg-white p-4 shadow-[0_-5px_15px_rgba(0,0,0,0.05)] border-t border-gray-100 z-30 space-y-3 rounded-t-2xl">
+        <button onclick="scanQR()" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 rounded-xl shadow-lg flex items-center justify-center gap-3 active:scale-95 transition">
+            <svg class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
+            <span class="text-2xl font-bold">สแกน QR เช็คชื่อ</span>
+        </button>
+        <button onclick="openManualCheckin()" class="w-full bg-white border-2 border-blue-400 text-indigo-600 py-3 rounded-xl hover:bg-indigo-50 transition flex items-center justify-center gap-2 active:scale-95">
+            <span class="font-bold">กรอกรหัสเช็คชื่อ (ออนไลน์)</span>
+        </button>
+        <p id="gpsStatus" class="text-center text-xs text-gray-400 mt-1">กำลังโหลด... กรุณารอสักครู่</p>
     </div>
 
     <div id="joinModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-60 backdrop-blur-sm">
         <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
             <h2 class="text-lg font-bold mb-2 text-gray-800 text-center">เข้าร่วมห้องเรียนใหม่</h2>
-            <input type="text" id="inputClassCode" maxlength="6" placeholder="รหัสวิชา 6 หลัก" class="w-full text-center text-3xl font-mono font-bold border-2 border-gray-200 bg-gray-50 p-3 rounded-xl mb-4 uppercase">
+            <p class="text-center text-xs text-gray-400 mb-4">กรอกรหัสวิชา 6 หลักที่ได้รับจากอาจารย์</p>
+            <input type="text" id="inputClassCode" maxlength="6" placeholder="รหัสวิชา (เช่น AB1234)" class="w-full text-center text-3xl font-mono font-bold border-2 border-gray-200 bg-gray-50 p-3 rounded-xl mb-6 uppercase focus:ring-2 focus:ring-gray-800 outline-none">
             <div class="flex gap-3">
-                <button onclick="document.getElementById('joinModal').classList.add('hidden')" class="flex-1 py-3 bg-gray-100 rounded-xl font-bold text-gray-600">ยกเลิก</button>
-                <button onclick="joinClass()" class="flex-1 py-3 text-white bg-gray-800 rounded-xl font-bold">เข้าร่วม</button>
+                <button onclick="document.getElementById('joinModal').classList.add('hidden')" class="flex-1 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl font-bold text-gray-600 transition">ยกเลิก</button>
+                <button onclick="joinClass()" class="flex-1 py-3 text-white bg-gray-900 hover:bg-black rounded-xl font-bold transition shadow-lg">เข้าร่วม</button>
             </div>
         </div>
     </div>
@@ -69,12 +100,8 @@ checkLogin('student');
             </div>
         </div>
     </div>
-    
-    <button onclick="document.getElementById('joinModal').classList.remove('hidden')" class="fixed bottom-6 right-6 bg-gray-800 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-3xl font-bold hover:bg-black transition transform hover:scale-110 active:scale-95 z-20">+</button>
-
 
     <script>
-        // *** ตรวจสอบ LIFF ID ให้ตรงกับที่สร้างใน LINE Developers สำหรับหน้านี้ ***
         const LIFF_ID = "2008573640-jb4bpE5J"; 
         
         let userLat = 0, userLng = 0;
@@ -82,10 +109,7 @@ checkLogin('student');
 
         async function main() {
             try {
-                // เริ่มต้น LIFF
                 await liff.init({ liffId: LIFF_ID });
-                
-                // ตรวจสอบสถานะ Login
                 if (!liff.isLoggedIn()) {
                     liff.login();
                 } else {
@@ -95,9 +119,7 @@ checkLogin('student');
                     initGPS();
                 }
             } catch (err) { 
-                // แสดง Error อย่างละเอียดเพื่อช่วย Debug
-                alert("LIFF Init Failed:\n" + err.message + "\n(Code: " + err.code + ")"); 
-                console.error(err);
+                alert("LIFF Init Failed:\n" + err.message); 
             }
         }
         main();
@@ -108,15 +130,15 @@ checkLogin('student');
                     (pos) => { 
                         userLat = pos.coords.latitude; 
                         userLng = pos.coords.longitude; 
-                        document.getElementById('gpsStatus').innerHTML = `<span class="text-green-600">✅ GPS พร้อมใช้งาน</span>`; 
+                        document.getElementById('gpsStatus').innerHTML = `<span class="text-green-600">✅ พร้อมใช้งาน</span>`; 
                     }, 
                     (err) => { 
-                        document.getElementById('gpsStatus').innerHTML = `<span class="text-red-500">❌ ไม่พบตำแหน่ง GPS (เปิด Location หรือยัง?)</span>`; 
+                        document.getElementById('gpsStatus').innerHTML = `<span class="text-red-500">❌ ไม่พบตำแหน่ง GPS (กรุณาเปิด GPS)</span>`; 
                     }, 
                     { enableHighAccuracy: true }
                 ); 
             } else {
-                document.getElementById('gpsStatus').innerText = "❌ อุปกรณ์ไม่รองรับ GPS";
+                document.getElementById('gpsStatus').innerText = "❌ กรุณาเปิด GPS";
             }
         }
 
@@ -129,29 +151,33 @@ checkLogin('student');
                 myClasses = res.data.classes;
                 
                 if (res.data.classes.length === 0) { 
-                    list.innerHTML = `<p class="text-center text-gray-400 mt-10">ยังไม่มีรายวิชา</p>`; 
+                    list.innerHTML = `<div class="bg-white p-10 rounded-2xl shadow-sm text-center">
+                        <p class="text-gray-300 text-5xl mb-3">📂</p>
+                        <p class="text-gray-400">ยังไม่ได้ลงทะเบียนวิชาเรียน</p>
+                        <p class="text-xs text-gray-300 mt-2">กดปุ่มเข้าร่วมด้านบนเพื่อเริ่มเรียน</p>
+                    </div>`; 
                     return; 
                 }
                 
                 res.data.classes.forEach(c => {
                     const isDark = isDarkColor(c.room_color);
-                    // ใช้ c.id (classrooms.id) เพื่อไปยังหน้า History
                     list.innerHTML += `
-                        <div onclick="goToHistory(${c.id})" class="p-4 rounded-2xl shadow-md mb-4 cursor-pointer relative overflow-hidden transform transition hover:scale-[1.02]" style="background-color: ${c.room_color};">
+                        <div onclick="goToHistory(${c.id})" class="p-5 rounded-2xl shadow-md mb-3 cursor-pointer relative overflow-hidden transform transition active:scale-95" style="background-color: ${c.room_color};">
                             <h3 class="text-xl font-bold ${isDark?'text-white':'text-gray-800'}">${c.subject_name}</h3>
-                            <p class="text-sm ${isDark?'text-white/80':'text-gray-500'}">${c.course_code} | อ.${c.teacher_name}</p>
+                            <p class="text-sm ${isDark?'text-white/80':'text-gray-500'} font-medium mt-1">${c.course_code} | อ.${c.teacher_name}</p>
+                            <div class="absolute right-4 top-4 opacity-20">
+                                <svg class="w-12 h-12 ${isDark?'text-white':'text-black'}" fill="currentColor" viewBox="0 0 20 20"><path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z"/></svg>
+                            </div>
                         </div>`;
                 });
             } catch (e) { 
                 console.error(e);
-                document.getElementById('classList').innerHTML = `<p class="text-center text-red-400 mt-10">โหลดข้อมูลไม่สำเร็จ</p>`;
             }
         }
 
         async function scanQR() { 
-            if (!userLat) return alert("❌ รอ GPS สักครู่... (ตรวจสอบว่าเปิด Location แล้ว)"); 
+            if (!userLat) return alert("ระบบยังไม่พร้อม กรุณารอสักครู่..."); 
             if (!liff.isInClient()) return alert("ฟังก์ชันสแกนใช้ได้เฉพาะบนแอป LINE ในมือถือเท่านั้น"); 
-            
             try { 
                 const result = await liff.scanCodeV2(); 
                 if (result.value) { 
@@ -162,13 +188,9 @@ checkLogin('student');
                         } else {
                             alert("❌ QR Code ไม่ถูกต้อง (ไม่ใช่ของระบบนี้)");
                         }
-                    } catch(e) {
-                        alert("❌ รูปแบบข้อมูล QR Code ไม่ถูกต้อง");
-                    }
+                    } catch(e) { alert("❌ รูปแบบข้อมูล QR Code ไม่ถูกต้อง"); }
                 } 
-            } catch (err) { 
-                alert("เปิดกล้องไม่ได้: " + err.message); 
-            } 
+            } catch (err) { alert("เปิดกล้องไม่ได้: " + err.message); } 
         }
 
         function openManualCheckin() { 
@@ -207,9 +229,7 @@ checkLogin('student');
                 } else {
                     alert("❌ " + res.data.message); 
                 }
-            } catch(err) {
-                alert("Server Error: เชื่อมต่อ API ไม่ได้");
-            } 
+            } catch(err) { alert("Server Error"); } 
         }
 
         async function joinClass() { 
@@ -232,24 +252,18 @@ checkLogin('student');
                 } else {
                     alert("❌ " + r.data.message);
                 }
-            } catch(e) {
-                alert("Server Error");
-            } 
+            } catch(e) { alert("Server Error"); } 
         }
 
-        function goToHistory(id) { 
-            window.location.href = './history.php?class_id=' + id; 
-        }
+        function goToHistory(id) { window.location.href = './history.php?class_id=' + id; }
 
         function isDarkColor(hex) { 
             if(!hex) return false; 
             const r = parseInt(hex.substr(1,2),16);
             const g = parseInt(hex.substr(3,2),16);
             const b = parseInt(hex.substr(5,2),16); 
-            // สูตรคำนวณความสว่าง (Luma)
             return (0.2126*r + 0.7152*g + 0.0722*b) < 128; 
         }
     </script>
-   
 </body>
 </html>

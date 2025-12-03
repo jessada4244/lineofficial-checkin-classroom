@@ -127,6 +127,9 @@ $myLiffId = $liff_ids[$role] ?? '';
 
     <script>
         const LIFF_ID = "<?php echo $myLiffId; ?>"; // รับค่าจาก PHP
+        
+        // [แก้ไข] รับ Role จาก PHP มาเก็บไว้ในตัวแปร JS
+        const currentUserRole = "<?php echo $_SESSION['role'] ?? 'guest'; ?>";
 
         async function main() {
             try {
@@ -144,13 +147,16 @@ $myLiffId = $liff_ids[$role] ?? '';
         }
         main();
 
+        // [แก้ไข] ฟังก์ชัน goBack ใหม่: ใช้การ Redirect ตาม Role แทน history.back()
         function goBack() {
-            // เช็คประวัติการถอยหลัง ถ้าไม่มีให้ปิดหน้าต่าง หรือกลับไปหน้าหลักตาม role
-            if(document.referrer) {
-                window.history.back();
+            if (currentUserRole === 'student') {
+                window.location.href = './student/class_list.php';
+            } else if (currentUserRole === 'teacher') {
+                window.location.href = './teacher/manage_class.php';
+            } else if (currentUserRole === 'admin') {
+                window.location.href = './admin/dashboard.php';
             } else {
-                // Fallback กรณีเปิดมาตรงๆ
-                window.location.href = './login.php'; 
+                window.location.href = './login.php';
             }
         }
 
@@ -192,7 +198,8 @@ $myLiffId = $liff_ids[$role] ?? '';
                     document.getElementById('view-main').classList.remove('hidden');
                 }
             } catch(e) {
-                alert("โหลดข้อมูลไม่สำเร็จ กรุณาลองใหม่");
+                // alert("โหลดข้อมูลไม่สำเร็จ กรุณาลองใหม่");
+                // ไม่ต้อง Alert แล้วถ้าโหลดไม่ได้ (อาจจะเพราะ LIFF Error)
             }
         }
 
