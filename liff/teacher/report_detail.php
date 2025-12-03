@@ -1,5 +1,8 @@
 <?php
-// liff/teacher/report_detail.php
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Cache-Control: post-check=0, pre-check=0", false);
+header("Pragma: no-cache");
+
 require_once '../../config/security.php';
 checkLogin('teacher');
 ?>
@@ -13,6 +16,14 @@ checkLogin('teacher');
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <style>@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap'); body { font-family: 'Sarabun', sans-serif; }</style>
+    <script>
+        window.onpageshow = function(event) {
+            // ถ้า Browser บอกว่าหน้านี้ถูกโหลดมาจาก Cache (ย้อนกลับมา) ให้สั่ง Reload ใหม่ทันที
+            if (event.persisted) {
+                window.location.reload();
+            }
+        };
+    </script>
 </head>
 <body class="bg-gray-50 min-h-screen">
 

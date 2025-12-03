@@ -1,4 +1,8 @@
 <?php
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Cache-Control: post-check=0, pre-check=0", false);
+header("Pragma: no-cache");
+
 require_once '../../config/security.php';
 checkLogin('teacher'); 
 ?>
@@ -19,6 +23,14 @@ checkLogin('teacher');
         .view-section.active { display: block; }
         #map { z-index: 0; }
     </style>
+    <script>
+        window.onpageshow = function(event) {
+            // ถ้า Browser บอกว่าหน้านี้ถูกโหลดมาจาก Cache (ย้อนกลับมา) ให้สั่ง Reload ใหม่ทันที
+            if (event.persisted) {
+                window.location.reload();
+            }
+        };
+    </script>
 </head>
 <body class="bg-gray-100 font-sans text-gray-800">
 
@@ -64,11 +76,10 @@ checkLogin('teacher');
                     <label class="text-xs text-gray-500 font-bold mb-1 block">⏰ สายหลังเวลา</label>
                     <div class="flex gap-2">
                         <input type="time" id="limitTime" class="flex-1 bg-gray-50 border border-gray-200 rounded-xl p-2 text-lg font-medium outline-none focus:ring-2 focus:ring-blue-500">
-                        <button onclick="saveCheckinConfig()" class="bg-gray-800 text-white px-4 rounded-xl text-sm font-bold shadow hover:bg-black">บันทึก</button>
-                    </div>
+                        </div>
                 </div>
                 
-                <div class="relative h-24 rounded-xl overflow-hidden border border-gray-200 mb-2">
+                <div class="relative h-80 rounded-xl overflow-hidden border border-gray-200 mb-2">
                      <div id="map" class="w-full h-full z-0"></div>
                      <div class="absolute inset-0 bg-black/10 flex items-center justify-center pointer-events-none">
                          <span class="text-[10px] bg-white/80 px-2 py-1 rounded text-gray-600">พิกัดปัจจุบัน</span>
@@ -78,6 +89,8 @@ checkLogin('teacher');
                     <p class="text-[10px] text-gray-400">Lat: <span id="disp_lat">-</span>, Lng: <span id="disp_lng">-</span></p>
                     <button onclick="getUserLocation()" class="text-[10px] text-blue-600 font-bold hover:underline">📍 อัปเดตพิกัด</button>
                 </div>
+                <button onclick="saveCheckinConfig()" class="w-40 bg-black text-white py-2 rounded-xl shadow-lg font-bold text-sm flex items-center justify-center gap-2 transform active:scale-95 transition mt-2 mx-auto">อัปเดตเวลา/พิกัด</button>
+                    
             </div>
 
             <button onclick="goToGenQR()" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white py-4 rounded-xl shadow-lg font-bold text-lg flex items-center justify-center gap-2 transform active:scale-95 transition mt-4">
@@ -262,13 +275,12 @@ checkLogin('teacher');
         }
 
         function renderMemberList() {
-    const list = document.getElementById('studentList');
-    list.innerHTML = '';
-    classData.members.forEach(m => {
-        // แก้ตรงนี้: ใช้ m.edu_id แทน m.student_id
-        list.innerHTML += `<div class="flex justify-between items-center bg-gray-50 p-2 rounded mb-1 border"><span class="text-sm">${m.name} (${m.edu_id})</span><button onclick="removeStudent('${m.edu_id}', ${m.id})" class="text-red-500 text-xs">ลบ</button></div>`;
-    });
-}
+            const list = document.getElementById('studentList');
+            list.innerHTML = '';
+            classData.members.forEach(m => {
+                list.innerHTML += `<div class="flex justify-between items-center bg-gray-50 p-2 rounded mb-1 border"><span class="text-sm">${m.name} (${m.student_id})</span><button onclick="removeStudent('${m.student_id}', ${m.id})" class="text-red-500 text-xs">ลบ</button></div>`;
+            });
+        }
 
         // --- Save Functions ---
         async function saveCheckinConfig(silent = false) {
