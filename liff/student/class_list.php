@@ -20,14 +20,13 @@ checkLogin('student');
     
     <script>
         window.onpageshow = function(event) {
-            // ถ้า Browser บอกว่าหน้านี้ถูกโหลดมาจาก Cache (ย้อนกลับมา) ให้สั่ง Reload ใหม่ทันที
             if (event.persisted) {
                 window.location.reload();
             }
         };
     </script>
 </head>
-<body class="bg-gray-100 min-h-screen pb-80"> 
+<body class="bg-gray-200 min-h-screen pb-80"> 
 
     <div class="bg-white p-4 shadow-sm sticky top-0 z-10 flex justify-between items-center">
         <div>
@@ -58,8 +57,8 @@ checkLogin('student');
         </button>
     </div>
 
-    <div class="text-xl font-bold px-4 pt-2 text-gray-800">รายการวิชา</div>
-    <div id="classList" class="px-4 space-y-4 pt-4">
+    <div class="text-sm font-bold px-4 pt-2 text-gray-400 uppercase tracking-wider">รายการวิชาที่ลงทะเบียน</div>
+    <div id="classList" class="px-4 pt-4 pb-20">
         <div class="text-center mt-10 text-gray-400">กำลังโหลดรายวิชา...</div>
     </div>
 
@@ -74,7 +73,7 @@ checkLogin('student');
         <p id="gpsStatus" class="text-center text-xs text-gray-400 mt-1">กำลังโหลด... กรุณารอสักครู่</p>
     </div>
 
-    <div id="joinModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-60 backdrop-blur-sm">
+    <div id="joinModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
         <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
             <h2 class="text-lg font-bold mb-2 text-gray-800 text-center">เข้าร่วมห้องเรียนใหม่</h2>
             <p class="text-center text-xs text-gray-400 mb-4">กรอกรหัสวิชา 6 หลักที่ได้รับจากอาจารย์</p>
@@ -86,7 +85,7 @@ checkLogin('student');
         </div>
     </div>
 
-    <div id="checkinModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-60 backdrop-blur-sm">
+    <div id="checkinModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
         <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
             <h2 class="text-lg font-bold mb-1 text-gray-800 text-center">เช็คชื่อด้วยรหัส</h2>
             <p class="text-xs text-gray-400 text-center mb-4">สำหรับนิสิตที่เรียนออนไลน์ หรืออยู่นอกพื้นที่</p>
@@ -151,7 +150,7 @@ checkLogin('student');
                 myClasses = res.data.classes;
                 
                 if (res.data.classes.length === 0) { 
-                    list.innerHTML = `<div class="bg-white p-10 rounded-2xl shadow-sm text-center">
+                    list.innerHTML = `<div class="bg-white p-10 rounded-2xl shadow-sm text-center border border-dashed border-gray-300">
                         <p class="text-gray-300 text-5xl mb-3">📂</p>
                         <p class="text-gray-400">ยังไม่ได้ลงทะเบียนวิชาเรียน</p>
                         <p class="text-xs text-gray-300 mt-2">กดปุ่มเข้าร่วมด้านบนเพื่อเริ่มเรียน</p>
@@ -161,12 +160,38 @@ checkLogin('student');
                 
                 res.data.classes.forEach(c => {
                     const isDark = isDarkColor(c.room_color);
+                    const iconColor = isDark ? 'text-white opacity-80' : 'text-gray-600 opacity-60';
+
+                    // ดีไซน์ใหม่: Header Banner สีเต็มพื้นที่ + รหัสวิชาพื้นหลังขาว ตัวหนังสือสีดำ
                     list.innerHTML += `
-                        <div onclick="goToHistory(${c.id})" class="p-5 rounded-2xl shadow-md mb-3 cursor-pointer relative overflow-hidden transform transition active:scale-95" style="background-color: ${c.room_color};">
-                            <h3 class="text-xl font-bold ${isDark?'text-white':'text-gray-800'}">${c.subject_name}</h3>
-                            <p class="text-sm ${isDark?'text-white/80':'text-gray-500'} font-medium mt-1">${c.course_code} | อ.${c.teacher_name}</p>
-                            <div class="absolute right-4 top-4 opacity-20">
-                                <svg class="w-12 h-12 ${isDark?'text-white':'text-black'}" fill="currentColor" viewBox="0 0 20 20"><path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z"/></svg>
+                        <div onclick="goToHistory(${c.id})" class="bg-white rounded-2xl shadow-sm border border-gray-100 mb-4 overflow-hidden cursor-pointer hover:shadow-md transition transform duration-200 active:scale-95 group">
+                            
+                            <div class="px-5 py-3 flex justify-between items-center" style="background-color: ${c.room_color};">
+                                <span class="text-xs font-bold px-3 py-1 rounded-lg bg-white shadow-sm text-gray-800">
+                                    ${c.course_code}
+                                </span>
+                                <div class="${iconColor} group-hover:opacity-100 transition">
+                                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                                </div>
+                            </div>
+
+                            <div class="p-5 pt-4">
+                                <h3 class="text-lg font-bold text-gray-800 mb-1 leading-snug line-clamp-2 group-hover:text-blue-600 transition">
+                                    ${c.subject_name}
+                                </h3>
+                                
+                                <div class="mt-4 pt-3 border-t border-gray-50 flex justify-between items-end">
+                                    <div>
+                                        <p class="text-[10px] text-gray-400 font-bold mb-0.5 uppercase tracking-wide">ผู้สอน</p>
+                                        <div class="flex items-center gap-2">
+                                            <p class="text-sm font-bold text-gray-700">อ.${c.teacher_name}</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-1.5 text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-lg group-hover:bg-blue-50 group-hover:text-blue-600 transition">
+                                        <span class="w-2 h-2 rounded-full" style="background-color:${c.room_color}"></span>
+                                        <span class="font-medium text-black">ประวัติเข้าเรียน</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>`;
                 });
