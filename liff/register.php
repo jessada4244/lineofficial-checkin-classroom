@@ -34,19 +34,22 @@
             
             <div>
                 <label class="block text-gray-700 text-xs font-bold mb-1">ชื่อ-นามสกุล</label>
-                <input type="text" id="name" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-gray-50" placeholder="เช่น นายสมชาย ใจดี" required>
+                <input type="text" id="name" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-gray-50" placeholder="กรอกชื่อและนามสกุล (ดี แก้วงาม)" required>
             </div>
 
             <div>
                 <label class="block text-gray-700 text-xs font-bold mb-1">ชื่อผู้ใช้งาน (Username)</label>
-                <input type="text" id="username" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-gray-50" placeholder="ตั้งชื่อผู้ใช้งาน" required>
+                <input type="text" id="username" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-gray-50" placeholder="กรอกชื่อผู้ใช้งาน" required>
             </div>
             
             <div>
                 <label class="block text-gray-700 text-xs font-bold mb-1">รหัสผ่าน</label>
-                <input type="password" id="password" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-gray-50" placeholder="ตั้งรหัสผ่าน" required>
+                <input type="password" id="password" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-gray-50" placeholder="กรอกรหัสผ่าน" required>
             </div>
-
+            <div>
+                <label class="block text-gray-700 text-xs font-bold mb-1">เบอร์โทร</label>
+                <input type="tel" maxlength="10" id="phone" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-gray-50" placeholder="กรอกเบอร์โทรศัพท์" required>
+            </div>
             <div>
                 <label class="block text-gray-700 text-xs font-bold mb-2">สถานะ</label>
                 <div class="grid grid-cols-2 gap-3">
@@ -122,10 +125,10 @@
     
     if (role === 'student') {
         label.innerText = "รหัสนิสิต";
-        input.placeholder = "เช่น 6601xxxx";
+        input.placeholder = "กรอกรหัสนิสิต";
     } else {
         label.innerText = "รหัสอาจารย์";
-        input.placeholder = "เช่น T-001";
+        input.placeholder = "กรอกรหัสอาจารย์";
     }
 }
         
@@ -136,6 +139,7 @@
     const name = document.getElementById('name').value;
     const username = document.getElementById('username').value;
     const password = document.getElementById('password').value;
+    const phone = document.getElementById('phone').value;
     const role = document.querySelector('input[name="role"]:checked').value;
     
     // จุดที่ 1: ดึงค่าจากช่อง input (id="studentId")
@@ -155,6 +159,7 @@
             name: name,
             username: username,
             password: password,
+            phone: phone,
             role: role,
             edu_id: eduId,       // <--- ต้องใช้ชื่อ edu_id ให้ตรงกับ API
             line_user_id: lineUserId 
