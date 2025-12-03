@@ -4,7 +4,7 @@ header("Cache-Control: post-check=0, pre-check=0", false);
 header("Pragma: no-cache");
 
 require_once '../../config/security.php';
-checkLogin('student'); // บังคับว่าเป็น teacher เท่านั้น
+checkLogin('student');
 ?>
 <!DOCTYPE html>
 <html lang="th">
@@ -19,6 +19,14 @@ checkLogin('student'); // บังคับว่าเป็น teacher เท
         @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap');
         body { font-family: 'Sarabun', sans-serif; }
     </style>
+     <script>
+        window.onpageshow = function(event) {
+            // ถ้า Browser บอกว่าหน้านี้ถูกโหลดมาจาก Cache (ย้อนกลับมา) ให้สั่ง Reload ใหม่ทันที
+            if (event.persisted) {
+                window.location.reload();
+            }
+        };
+    </script>
 </head>
 <body class="bg-gray-50 min-h-screen">
 
@@ -32,16 +40,21 @@ checkLogin('student'); // บังคับว่าเป็น teacher เท
         </div>
     </div>
 
-    <div class="grid grid-cols-2 gap-3 p-4">
-        <div class="bg-white p-4 rounded-2xl shadow-sm border border-green-100 flex flex-col items-center">
-            <div class="bg-green-100 text-green-600 w-8 h-8 rounded-full flex items-center justify-center mb-2 text-xs font-bold">✓</div>
-            <p class="text-xs text-gray-400 mb-0.5">เข้าเรียน (ครั้ง)</p>
-            <p id="countPresent" class="text-2xl font-bold text-gray-800">-</p>
+    <div class="grid grid-cols-3 gap-2 p-4">
+        <div class="bg-white p-3 rounded-2xl shadow-sm border border-green-100 flex flex-col items-center">
+            <div class="bg-green-100 text-green-600 w-8 h-8 rounded-full flex items-center justify-center mb-1 text-xs font-bold">✓</div>
+            <p class="text-[10px] text-gray-400">เข้าเรียน</p>
+            <p id="countPresent" class="text-xl font-bold text-gray-800">-</p>
         </div>
-        <div class="bg-white p-4 rounded-2xl shadow-sm border border-yellow-100 flex flex-col items-center">
-            <div class="bg-yellow-100 text-yellow-600 w-8 h-8 rounded-full flex items-center justify-center mb-2 text-xs font-bold">!</div>
-            <p class="text-xs text-gray-400 mb-0.5">มาสาย (ครั้ง)</p>
-            <p id="countLate" class="text-2xl font-bold text-gray-800">-</p>
+        <div class="bg-white p-3 rounded-2xl shadow-sm border border-yellow-100 flex flex-col items-center">
+            <div class="bg-yellow-100 text-yellow-600 w-8 h-8 rounded-full flex items-center justify-center mb-1 text-xs font-bold">!</div>
+            <p class="text-[10px] text-gray-400">มาสาย</p>
+            <p id="countLate" class="text-xl font-bold text-gray-800">-</p>
+        </div>
+        <div class="bg-white p-3 rounded-2xl shadow-sm border border-red-100 flex flex-col items-center">
+            <div class="bg-red-100 text-red-600 w-8 h-8 rounded-full flex items-center justify-center mb-1 text-xs font-bold">✕</div>
+            <p class="text-[10px] text-gray-400">ขาดเรียน</p>
+            <p id="countAbsent" class="text-xl font-bold text-gray-800">-</p>
         </div>
     </div>
 
@@ -52,7 +65,6 @@ checkLogin('student'); // บังคับว่าเป็น teacher เท
     </div>
 
     <script>
-        // *** ใช้ LIFF ID เดียวกับ class_list.php ได้เลยครับ ***
         const LIFF_ID = "2008573640-jb4bpE5J"; 
         const CLASS_ID = (new URLSearchParams(window.location.search)).get('class_id');
 
@@ -95,15 +107,17 @@ checkLogin('student'); // บังคับว่าเป็น teacher เท
 
             let present = 0;
             let late = 0;
+            let absent = 0; // เพิ่มตัวแปรนับขาด
 
             if (data.history.length === 0) {
                 list.innerHTML = `
                     <div class="text-center py-12 opacity-40">
                         <svg class="w-16 h-16 mx-auto mb-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                        <p>ยังไม่มีประวัติการเช็คชื่อ</p>
+                        <p>ยังไม่มีประวัติการเรียนการสอน</p>
                     </div>`;
                 document.getElementById('countPresent').innerText = 0;
                 document.getElementById('countLate').innerText = 0;
+                document.getElementById('countAbsent').innerText = 0;
                 return;
             }
 
@@ -111,18 +125,33 @@ checkLogin('student'); // บังคับว่าเป็น teacher เท
                 // นับจำนวน
                 if (h.status === 'present') present++;
                 else if (h.status === 'late') late++;
+                else if (h.status === 'absent') absent++; // นับขาด
 
                 // Format DateTime
                 const dateObj = new Date(h.checkin_time);
                 const dateStr = dateObj.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' });
                 const timeStr = dateObj.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
 
-                // UI Status
-                const isLate = h.status === 'late';
-                const statusText = isLate ? 'มาสาย' : 'ทันเวลา';
-                const statusBg = isLate ? 'bg-yellow-50 border-yellow-100' : 'bg-white border-gray-100';
-                const iconBg = isLate ? 'bg-yellow-100 text-yellow-600' : 'bg-green-100 text-green-600';
-                const icon = isLate ? '!' : '✓';
+                // UI Status Settings
+                let statusText = 'ทันเวลา';
+                let statusBg = 'bg-white border-gray-100';
+                let iconBg = 'bg-green-100 text-green-600';
+                let badgeClass = 'bg-green-100 text-green-700';
+                let icon = '✓';
+
+                if (h.status === 'late') {
+                    statusText = 'มาสาย';
+                    statusBg = 'bg-yellow-50 border-yellow-100';
+                    iconBg = 'bg-yellow-100 text-yellow-600';
+                    badgeClass = 'bg-yellow-200 text-yellow-800';
+                    icon = '!';
+                } else if (h.status === 'absent') {
+                    statusText = 'ขาดเรียน';
+                    statusBg = 'bg-red-50 border-red-100 opacity-75'; // ทำให้จางหน่อย
+                    iconBg = 'bg-red-100 text-red-600';
+                    badgeClass = 'bg-red-200 text-red-800';
+                    icon = '✕';
+                }
 
                 list.innerHTML += `
                     <div class="${statusBg} p-4 rounded-xl shadow-sm border flex justify-between items-center transition hover:shadow-md">
@@ -132,10 +161,12 @@ checkLogin('student'); // บังคับว่าเป็น teacher เท
                             </div>
                             <div>
                                 <p class="text-sm font-bold text-gray-800">${dateStr}</p>
-                                <p class="text-xs text-gray-400">เวลา ${timeStr} น.</p>
+                                <p class="text-xs text-gray-400">
+                                    ${h.status === 'absent' ? 'ไม่ได้เช็คชื่อ' : 'เวลา ' + timeStr + ' น.'}
+                                </p>
                             </div>
                         </div>
-                        <span class="text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wide ${isLate ? 'bg-yellow-200 text-yellow-800' : 'bg-green-100 text-green-700'}">
+                        <span class="text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wide ${badgeClass}">
                             ${statusText}
                         </span>
                     </div>
@@ -144,6 +175,7 @@ checkLogin('student'); // บังคับว่าเป็น teacher เท
 
             document.getElementById('countPresent').innerText = present;
             document.getElementById('countLate').innerText = late;
+            document.getElementById('countAbsent').innerText = absent;
         }
     </script>
 </body>

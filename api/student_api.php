@@ -90,16 +90,59 @@ try {
     }
     elseif ($action === 'get_history') {
         $classId = $input['class_id'];
+        
+        // 1. ดึงข้อมูลชื่อวิชา
         $stmtClass = $pdo->prepare("SELECT subject_name, course_code FROM classrooms WHERE id = ?");
         $stmtClass->execute([$classId]);
         $classInfo = $stmtClass->fetch();
         if (!$classInfo) { echo json_encode(['status' => 'error', 'message' => 'ไม่พบข้อมูลวิชา']); exit; }
 
-        $stmtHist = $pdo->prepare("SELECT * FROM attendance WHERE student_id = ? AND classroom_id = ? ORDER BY checkin_time DESC");
-        $stmtHist->execute([$studentUserId, $classId]);
-        $history = $stmtHist->fetchAll();
+        // 2. ดึง "Master List" ของทุก Session ที่เคยเกิดขึ้นในวิชานี้ (ดูจากที่มีเพื่อนคนอื่นเช็คชื่อ)
+        // ใช้ MIN(checkin_time) เพื่อระบุเวลาเริ่มเรียนของคาบนั้น
+        $sqlAllSessions = "SELECT session_token, MIN(checkin_time) as session_date 
+                           FROM attendance 
+                           WHERE classroom_id = ? 
+                           GROUP BY session_token 
+                           ORDER BY session_date DESC";
+        $stmtSessions = $pdo->prepare($sqlAllSessions);
+        $stmtSessions->execute([$classId]);
+        $allSessions = $stmtSessions->fetchAll();
 
-        echo json_encode(['status' => 'success', 'subject_name' => $classInfo['subject_name'], 'course_code' => $classInfo['course_code'], 'history' => $history]);
+        // 3. ดึงประวัติการมาเรียนของ "เราเอง"
+        $stmtMyAtt = $pdo->prepare("SELECT session_token, status, checkin_time FROM attendance WHERE student_id = ? AND classroom_id = ?");
+        $stmtMyAtt->execute([$studentUserId, $classId]);
+        $myAttRaw = $stmtMyAtt->fetchAll();
+        
+        // แปลงเป็น Map เพื่อให้เทียบง่ายๆ:  ['SESSION_XXX' => ['status'=>'present', ...]]
+        $myAttMap = [];
+        foreach ($myAttRaw as $row) {
+            $myAttMap[$row['session_token']] = $row;
+        }
+
+        // 4. จับคู่ (Mapping) เพื่อหาว่าคาบไหนเราขาด
+        $finalHistory = [];
+        foreach ($allSessions as $sess) {
+            $token = $sess['session_token'];
+            
+            if (isset($myAttMap[$token])) {
+                // ถ้ามี record แปลว่า "มาเรียน" หรือ "สาย"
+                $finalHistory[] = $myAttMap[$token];
+            } else {
+                // ถ้าไม่มี record ในคาบนี้ แปลว่า "ขาด" (Absent)
+                $finalHistory[] = [
+                    'session_token' => $token,
+                    'status' => 'absent',
+                    'checkin_time' => $sess['session_date'] // ใช้วันที่ของคาบนั้นมาแสดงแทน
+                ];
+            }
+        }
+
+        echo json_encode([
+            'status' => 'success', 
+            'subject_name' => $classInfo['subject_name'], 
+            'course_code' => $classInfo['course_code'], 
+            'history' => $finalHistory
+        ]);
     }
     else { echo json_encode(['status' => 'error', 'message' => 'Unknown Action']); }
 
