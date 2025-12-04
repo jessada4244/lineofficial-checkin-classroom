@@ -25,7 +25,6 @@ checkLogin('teacher');
     </style>
     <script>
         window.onpageshow = function(event) {
-            // ถ้า Browser บอกว่าหน้านี้ถูกโหลดมาจาก Cache (ย้อนกลับมา) ให้สั่ง Reload ใหม่ทันที
             if (event.persisted) {
                 window.location.reload();
             }
@@ -60,7 +59,7 @@ checkLogin('teacher');
                     <p class="text-xs text-blue-100 mb-1">รหัสเข้าห้อง</p>
                     <div onclick="copyCode()" class="bg-white text-blue-800 px-3 py-1 rounded-lg font-mono font-bold text-lg cursor-pointer active:scale-95 transition shadow-sm">
                         <span id="dash-classCode">...</span>
-                        <span class="text-[10px] text-gray-400 ml-1">📋</span>
+                       
                     </div>
                 </div>
             </div>
@@ -69,25 +68,26 @@ checkLogin('teacher');
         <div class="px-5 space-y-4">
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
                 <h2 class="text-gray-800 font-bold mb-4 flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-500" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" /></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" /></svg>
                     ตั้งค่าพื้นฐาน
                 </h2>
                 <div class="mb-4">
-                    <label class="text-xs text-gray-500 font-bold mb-1 block">⏰ สายหลังเวลา</label>
+                    <label class="text-xs text-gray-500 font-bold mb-1 block">⏰ ตั้งค่าเวลาสาย</label>
                     <div class="flex gap-2">
                         <input type="time" id="limitTime" class="flex-1 bg-gray-50 border border-gray-200 rounded-xl p-2 text-lg font-medium outline-none focus:ring-2 focus:ring-blue-500">
-                        </div>
+                    </div>
                 </div>
                 
                 <div class="relative h-80 rounded-xl overflow-hidden border border-gray-200 mb-2">
                      <div id="map" class="w-full h-full z-0"></div>
-                     <div class="absolute inset-0 bg-black/10 flex items-center justify-center pointer-events-none">
-                         <span class="text-[10px] bg-white/80 px-2 py-1 rounded text-gray-600">พิกัดปัจจุบัน</span>
+                     <div class="absolute bottom-2 left-2 right-2 bg-white/90 p-2 rounded-lg text-xs shadow-md z-10 pointer-events-none text-center">
+                         <span class="font-bold text-green-600">พื้นที่สีเขียว:</span> ระยะ 50 เมตร สามารถเช็คชื่อได้<br>
+                         <span class="font-bold text-red-600">ขอบสีแดง</span></span>:</span> เมื่อเกินขอบจะไม่สามารถเช็คชื่อได้
                      </div>
                 </div>
                 <div class="flex justify-between items-center">
                     <p class="text-[10px] text-gray-400">Lat: <span id="disp_lat">-</span>, Lng: <span id="disp_lng">-</span></p>
-                    <button onclick="getUserLocation()" class="text-[10px] text-blue-600 font-bold hover:underline">📍 อัปเดตพิกัด</button>
+                    <button onclick="getUserLocation()" class="text-[14px] text-blue-600 font-bold hover:underline">📍 ค้นหาตำแหน่งปัจจุบัน</button>
                 </div>
                 <button onclick="saveCheckinConfig()" class="w-40 bg-black text-white py-2 rounded-xl shadow-lg font-bold text-sm flex items-center justify-center gap-2 transform active:scale-95 transition mt-2 mx-auto">อัปเดตเวลา/พิกัด</button>
                     
@@ -162,10 +162,11 @@ checkLogin('teacher');
     <input type="hidden" id="current_lat"><input type="hidden" id="current_lng">
 
     <script>
-        const LIFF_ID = "2008573640-qQxJWXLz"; // <-- ตรวจสอบ LIFF ID ของคุณ
+        const LIFF_ID = "2008573640-qQxJWXLz"; 
         const CLASS_ID = (new URLSearchParams(window.location.search)).get('class_id');
         const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4'];
-        let map, marker, classData = {};
+        let map, marker, circle; // เพิ่มตัวแปร circle
+        let classData = {};
 
         async function main() {
             if (!CLASS_ID) return alert("ไม่พบ Class ID");
@@ -191,25 +192,61 @@ checkLogin('teacher');
         function goToGenQR() {
             window.location.href = `./gen_qr.php?class_id=${CLASS_ID}`;
         }
-
+        var redIcon = new L.Icon({
+    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+});
         // --- Map & Location ---
         function initMap(lat, lng) {
-            const startLat = lat || 13.7563;
-            const startLng = lng || 100.5018;
+            const startLat = lat || 16.7488;
+            const startLng = lng || 100.1894;
+            
             if (map) {
+                // Update ตำแหน่ง Marker และ Map View
                 marker.setLatLng([startLat, startLng]);
-                map.setView([startLat, startLng], 15);
+                map.setView([startLat, startLng], 18);
+                
+                // Update ตำแหน่งวงกลม
+                if (circle) circle.setLatLng([startLat, startLng]);
             } else {
-                map = L.map('map', {zoomControl:false}).setView([startLat, startLng], 15);
+                // เริ่มต้นสร้าง Map
+                map = L.map('map', {zoomControl:false}).setView([startLat, startLng], 18);
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '' }).addTo(map);
-                marker = L.marker([startLat, startLng], { draggable: true }).addTo(map);
+                
+                // สร้าง Marker
+                marker = L.marker([startLat, startLng], { 
+                    draggable: true ,
+                    icon: redIcon
+                }).addTo(map);
+                
+                // *** เพิ่มวงกลมรัศมี 50 เมตร ***
+                circle = L.circle([startLat, startLng], {
+                    color: '#eb2525ff',       // สีเส้นขอบ
+                    fillColor: '#4ef63bff',   // สีพื้นหลัง
+                    fillOpacity: 0.2,       // ความโปร่งแสง
+                    radius: 50              // รัศมี 50 เมตร
+                }).addTo(map);
+                
+                // เมื่อลาก Marker ให้วงกลมขยับตามแบบ Real-time
+                marker.on('drag', function(e) {
+                    const pos = marker.getLatLng();
+                    circle.setLatLng(pos);
+                });
+
+                // เมื่อปล่อย Marker ให้อัปเดตค่าพิกัดลง Input
                 marker.on('dragend', function(e) {
                     const pos = marker.getLatLng();
                     updateLatLngInputs(pos.lat, pos.lng);
+                    circle.setLatLng(pos); // จัดตำแหน่งให้ชัวร์อีกที
                 });
             }
             updateLatLngInputs(startLat, startLng);
         }
+
         function updateLatLngInputs(lat, lng) {
             document.getElementById('current_lat').value = lat;
             document.getElementById('current_lng').value = lng;
@@ -225,7 +262,7 @@ checkLogin('teacher');
             }
         }
 
-        // --- Load Data (Updated with Error Handling) ---
+        // --- Load Data ---
         async function loadClassData() {
             try {
                 const profile = await liff.getProfile();
@@ -246,7 +283,7 @@ checkLogin('teacher');
                 }
             } catch (err) {
                 console.error("Load Class Error:", err);
-                alert("⚠️ System Error: " + err.message + "\n(กรุณาเช็ค Console)");
+                alert("⚠️ System Error: " + err.message);
                 document.getElementById('loading').innerText = "โหลดไม่สำเร็จ";
             }
         }
@@ -267,7 +304,6 @@ checkLogin('teacher');
         function renderSettings() {
             document.getElementById('edit-subjectName').value = classData.subject_name;
             document.getElementById('edit-courseCode').value = classData.course_code;
-            // ใส่ข้อมูล Link ลงในช่อง Input (ถ้าไม่มีช่องนี้ใน HTML จะเกิด Error)
             document.getElementById('edit-zoomLink').value = classData.zoom_link || '';
             document.getElementById('edit-teamsLink').value = classData.teams_link || '';
             selectColor(classData.room_color || COLORS[0]);
@@ -278,7 +314,7 @@ checkLogin('teacher');
             const list = document.getElementById('studentList');
             list.innerHTML = '';
             classData.members.forEach(m => {
-                list.innerHTML += `<div class="flex justify-between items-center bg-gray-50 p-2 rounded mb-1 border"><span class="text-sm">${m.name} (${m.student_id})</span><button onclick="removeStudent('${m.student_id}', ${m.id})" class="text-red-500 text-xs">ลบ</button></div>`;
+                list.innerHTML += `<div class="flex justify-between items-center bg-gray-50 p-2 rounded mb-1 border"><span class="text-sm">${m.name} (${m.edu_id || m.student_id})</span><button onclick="removeStudent('${m.edu_id || m.student_id}', ${m.id})" class="text-red-500 text-xs">ลบ</button></div>`;
             });
         }
 
