@@ -166,7 +166,6 @@ try {
         // ** แก้ไข: ดึง edu_id **
         $stmtStd = $pdo->prepare("SELECT u.id, u.edu_id, u.name FROM classroom_members cm JOIN users u ON cm.student_id = u.id WHERE cm.classroom_id = ? ORDER BY u.edu_id ASC"); 
         $stmtStd->execute([$classId]); $allStudents = $stmtStd->fetchAll();
-        
         $stmtAtt = $pdo->prepare("SELECT student_id, status, checkin_time FROM attendance WHERE classroom_id = ? AND session_token = ?"); $stmtAtt->execute([$classId, $token]); $attendees = $stmtAtt->fetchAll();
         $attMap = []; foreach($attendees as $a) { $attMap[$a['student_id']] = $a; }
         $report = []; $summary = ['present'=>0, 'late'=>0, 'absent'=>0];

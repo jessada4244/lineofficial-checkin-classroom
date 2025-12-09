@@ -121,7 +121,7 @@ checkLogin('teacher');
 
             <div class="bg-white rounded-2xl shadow-sm p-4 border border-gray-100">
                 <div class="flex justify-between items-center mb-3 border-b pb-2">
-                    <h3 class="font-bold text-gray-700">🔴 Live Status</h3>
+                    <h3 class="font-bold text-gray-700">สถานะการเช็คชื่อ</h3>
                     <div class="flex gap-2 text-xs">
                         <span class="bg-green-100 text-green-700 px-2 py-0.5 rounded">มา: <span id="countIn" class="font-bold">0</span></span>
                         <span class="bg-red-50 text-red-400 px-2 py-0.5 rounded">ยังไม่มา: <span id="countNot" class="font-bold">0</span></span>
@@ -193,7 +193,7 @@ checkLogin('teacher');
             const link = document.getElementById('meetingLink').value;
             const notify = document.getElementById('notifyLine').checked;
             
-            if(!time) return alert("กรุณากำหนดเวลาตัดสาย");
+            if(!time) return alert("กรุณากำหนดเวลาสาย");
 
             // UI Changes
             document.getElementById('btnStart').innerText = "กำลังสร้าง...";
